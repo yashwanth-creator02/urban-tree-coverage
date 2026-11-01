@@ -1,0 +1,17 @@
+{
+  "slope_per_year": 0.1155,
+  "intercept": -210.18,
+  "r_squared": 0.0557,
+  "historical": {
+    "2000": 24.8,
+    "2010": 16.45,
+    "2020": 19.62,
+    "2025": 28.68
+  },
+  "projections": {
+    "2030": 24.26,
+    "2035": 24.84
+  },
+  "method": "linear_trend",
+  "limitation_note": "Linear extrapolation based on multi-decadal samples; external policy interventions or land saturation can alter actual future outcomes."
+}

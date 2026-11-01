@@ -1,0 +1,146 @@
+{
+  "years": [
+    2000,
+    2010,
+    2020,
+    2025
+  ],
+  "data": {
+    "2000": {
+      "year": 2000,
+      "green_area_km2": 264.65,
+      "green_percentage": 24.8,
+      "total_analyzed_area_km2": 1067.33,
+      "tier_breakdown": {
+        "non_vegetated": {
+          "pixel_count": 128406,
+          "area_km2": 115.565,
+          "percentage": 10.83
+        },
+        "sparse_vegetation": {
+          "pixel_count": 404179,
+          "area_km2": 363.761,
+          "percentage": 34.08
+        },
+        "moderate_canopy": {
+          "pixel_count": 359284,
+          "area_km2": 323.356,
+          "percentage": 30.3
+        },
+        "dense_tree_canopy": {
+          "pixel_count": 294051,
+          "area_km2": 264.646,
+          "percentage": 24.8
+        }
+      },
+      "fragmentation": {
+        "patch_count": 12540,
+        "mean_patch_size_km2": 0.0211,
+        "largest_patch_km2": 17.9046
+      },
+      "scenes_used": 1
+    },
+    "2010": {
+      "year": 2010,
+      "green_area_km2": 177.51,
+      "green_percentage": 16.45,
+      "total_analyzed_area_km2": 1079.0,
+      "tier_breakdown": {
+        "non_vegetated": {
+          "pixel_count": 273872,
+          "area_km2": 246.485,
+          "percentage": 22.84
+        },
+        "sparse_vegetation": {
+          "pixel_count": 417752,
+          "area_km2": 375.977,
+          "percentage": 34.85
+        },
+        "moderate_canopy": {
+          "pixel_count": 310030,
+          "area_km2": 279.027,
+          "percentage": 25.86
+        },
+        "dense_tree_canopy": {
+          "pixel_count": 197230,
+          "area_km2": 177.507,
+          "percentage": 16.45
+        }
+      },
+      "fragmentation": {
+        "patch_count": 12034,
+        "mean_patch_size_km2": 0.0148,
+        "largest_patch_km2": 11.4012
+      },
+      "scenes_used": 5
+    },
+    "2020": {
+      "year": 2020,
+      "green_area_km2": 211.56,
+      "green_percentage": 19.62,
+      "total_analyzed_area_km2": 1078.22,
+      "tier_breakdown": {
+        "non_vegetated": {
+          "pixel_count": 332893,
+          "area_km2": 299.604,
+          "percentage": 27.79
+        },
+        "sparse_vegetation": {
+          "pixel_count": 367505,
+          "area_km2": 330.755,
+          "percentage": 30.68
+        },
+        "moderate_canopy": {
+          "pixel_count": 262559,
+          "area_km2": 236.303,
+          "percentage": 21.92
+        },
+        "dense_tree_canopy": {
+          "pixel_count": 235069,
+          "area_km2": 211.562,
+          "percentage": 19.62
+        }
+      },
+      "fragmentation": {
+        "patch_count": 12784,
+        "mean_patch_size_km2": 0.0165,
+        "largest_patch_km2": 7.74
+      },
+      "scenes_used": 2
+    },
+    "2025": {
+      "year": 2025,
+      "green_area_km2": 309.46,
+      "green_percentage": 28.68,
+      "total_analyzed_area_km2": 1078.95,
+      "tier_breakdown": {
+        "non_vegetated": {
+          "pixel_count": 298560,
+          "area_km2": 268.704,
+          "percentage": 24.9
+        },
+        "sparse_vegetation": {
+          "pixel_count": 305819,
+          "area_km2": 275.237,
+          "percentage": 25.51
+        },
+        "moderate_canopy": {
+          "pixel_count": 250604,
+          "area_km2": 225.544,
+          "percentage": 20.9
+        },
+        "dense_tree_canopy": {
+          "pixel_count": 343847,
+          "area_km2": 309.462,
+          "percentage": 28.68
+        }
+      },
+      "fragmentation": {
+        "patch_count": 18607,
+        "mean_patch_size_km2": 0.0166,
+        "largest_patch_km2": 14.3658
+      },
+      "scenes_used": 2
+    }
+  }
+}

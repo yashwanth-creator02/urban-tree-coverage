@@ -1,0 +1,94 @@
+{
+  "2000_2010": {
+    "loss": {
+      "pixel_count": 330872,
+      "area_km2": 297.785,
+      "percentage": 27.9
+    },
+    "gain": {
+      "pixel_count": 118497,
+      "area_km2": 106.647,
+      "percentage": 9.99
+    },
+    "stable_green": {
+      "pixel_count": 93580,
+      "area_km2": 84.222,
+      "percentage": 7.89
+    },
+    "stable_non_green": {
+      "pixel_count": 642965,
+      "area_km2": 578.668,
+      "percentage": 54.22
+    },
+    "net_change_km2": -191.138
+  },
+  "2010_2020": {
+    "loss": {
+      "pixel_count": 181546,
+      "area_km2": 163.391,
+      "percentage": 15.15
+    },
+    "gain": {
+      "pixel_count": 197352,
+      "area_km2": 177.617,
+      "percentage": 16.47
+    },
+    "stable_green": {
+      "pixel_count": 84309,
+      "area_km2": 75.878,
+      "percentage": 7.04
+    },
+    "stable_non_green": {
+      "pixel_count": 734813,
+      "area_km2": 661.332,
+      "percentage": 61.34
+    },
+    "net_change_km2": 14.225
+  },
+  "2020_2025": {
+    "loss": {
+      "pixel_count": 107598,
+      "area_km2": 96.838,
+      "percentage": 8.98
+    },
+    "gain": {
+      "pixel_count": 275165,
+      "area_km2": 247.648,
+      "percentage": 22.97
+    },
+    "stable_green": {
+      "pixel_count": 130758,
+      "area_km2": 117.682,
+      "percentage": 10.91
+    },
+    "stable_non_green": {
+      "pixel_count": 684447,
+      "area_km2": 616.002,
+      "percentage": 57.13
+    },
+    "net_change_km2": 150.81
+  },
+  "2000_2025": {
+    "loss": {
+      "pixel_count": 333320,
+      "area_km2": 299.988,
+      "percentage": 28.11
+    },
+    "gain": {
+      "pixel_count": 298510,
+      "area_km2": 268.659,
+      "percentage": 25.17
+    },
+    "stable_green": {
+      "pixel_count": 86899,
+      "area_km2": 78.209,
+      "percentage": 7.33
+    },
+    "stable_non_green": {
+      "pixel_count": 467141,
+      "area_km2": 420.427,
+      "percentage": 39.39
+    },
+    "net_change_km2": -31.329
+  }
+}
