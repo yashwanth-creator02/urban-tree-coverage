@@ -1,0 +1,48 @@
+:root {
+  /* Obsidian Copper Palette (Default Dark Analytic Theme) */
+  --bg-primary: #0e1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #21262d;
+  --border-subtle: #30363d;
+  --border-accent: #543d31;
+  --text-primary: #f0f6fc;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  
+  --copper-base: #c45d2c;
+  --copper-bright: #d97742;
+  --copper-light: #e88d5d;
+  --copper-dark: #9e441b;
+  --copper-deep: #5c250c;
+
+  --color-green-dense: #2e7d32;
+  --color-green-moderate: #4caf50;
+  --color-green-sparse: #81c784;
+
+  --color-loss: #c45d2c;
+  --color-gain: #388e3c;
+  --color-stable: #48525e;
+}
+
+[data-theme="radiant-light"] {
+  --bg-primary: #fcfbf9;
+  --bg-secondary: #f4f1ea;
+  --bg-tertiary: #ebe6dc;
+  --border-subtle: #d8d1c5;
+  --border-accent: #c49275;
+  --text-primary: #1f2328;
+  --text-secondary: #59636e;
+  --text-muted: #818b98;
+
+  --copper-base: #b85220;
+  --copper-bright: #d97742;
+  --copper-dark: #8a3610;
+
+  --color-green-dense: #1b5e20;
+  --color-green-moderate: #2e7d32;
+  --color-green-sparse: #4caf50;
+
+  --color-loss: #b85220;
+  --color-gain: #2e7d32;
+  --color-stable: #7d8590;
+}
