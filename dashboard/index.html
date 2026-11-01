@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bengaluru Urban Green-Cover Intelligence & Historical Change</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="header-brand">
+      <h1>Bengaluru Urban Green-Cover Intelligence</h1>
+      <span class="subtitle">Multi-Decadal Satellite Change Analysis (2000 - 2025)</span>
+    </div>
+    <div class="header-badges">
+      <span class="tech-badge">Sensor: Landsat C2-L2</span>
+      <span class="tech-badge">Resolution: 30m</span>
+      <span class="tech-badge accent">Status: Calibrated</span>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <div class="workspace">
+    <!-- Controls Sidebar -->
+    <aside class="controls-bar">
+      <!-- Mode Selection -->
+      <div class="control-group">
+        <label class="control-label">Analysis Mode</label>
+        <div class="btn-group" id="mode-selector">
+          <button class="btn-toggle active" data-mode="annual">Annual Cover</button>
+          <button class="btn-toggle" data-mode="change">Decadal Shift</button>
+        </div>
+      </div>
+
+      <!-- Boundary Type Selection -->
+      <div class="control-group">
+        <label class="control-label">Spatial Partitioning</label>
+        <div class="btn-group" id="zone-selector">
+          <button class="btn-toggle active" data-zone="grid_1km">1km Grid</button>
+          <button class="btn-toggle" data-zone="wards">BBMP Wards</button>
+        </div>
+      </div>
+
+      <!-- Year Slider -->
+      <div class="control-group" id="year-control-group">
+        <div class="year-display">
+          <label class="control-label">Observation Year</label>
+          <span class="year-value" id="current-year-val">2025</span>
+        </div>
+        <div class="slider-container">
+          <input type="range" id="year-slider" min="0" max="3" step="1" value="3">
+          <div class="slider-ticks">
+            <span>2000</span>
+            <span>2010</span>
+            <span>2020</span>
+            <span>2025</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Raster Overlay Options -->
+      <div class="control-group">
+        <label class="control-label">Satellite Raster Layer</label>
+        <div class="btn-group" id="raster-toggle-group">
+          <button class="btn-toggle active" id="btn-raster-off">Vectors Only</button>
+          <button class="btn-toggle" id="btn-raster-on">NDVI Raster</button>
+        </div>
+      </div>
+
+      <div class="control-group" id="opacity-control-group" style="display: none;">
+        <label class="control-label">Raster Opacity</label>
+        <input type="range" id="raster-opacity" min="10" max="100" value="75">
+      </div>
+
+      <!-- Ground Truth Landmarks Toggle -->
+      <div class="control-group">
+        <label class="control-label">Verification Pins</label>
+        <div class="btn-group" id="landmarks-toggle-group">
+          <button class="btn-toggle active" id="btn-landmarks-on">Visible</button>
+          <button class="btn-toggle" id="btn-landmarks-off">Hidden</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Map Viewport -->
+    <main class="map-container">
+      <div id="map"></div>
+
+      <!-- Map Legend -->
+      <div class="map-legend" id="map-legend">
+        <!-- Rendered dynamically based on mode -->
+      </div>
+    </main>
+
+    <!-- Right Analytical Panel -->
+    <aside class="analytics-panel">
+      <!-- Citywide KPI Overview -->
+      <section class="card">
+        <h2 class="card-title">Citywide Canopy Summary</h2>
+        <div class="kpi-grid">
+          <div class="kpi-item">
+            <div class="kpi-label">2025 Canopy Area</div>
+            <div class="kpi-value" id="kpi-canopy-area">-- km²</div>
+          </div>
+          <div class="kpi-item">
+            <div class="kpi-label">2025 Green %</div>
+            <div class="kpi-value" id="kpi-canopy-pct">-- %</div>
+          </div>
+          <div class="kpi-item">
+            <div class="kpi-label">Decadal Net (2000-25)</div>
+            <div class="kpi-value" id="kpi-net-shift">-- km²</div>
+          </div>
+          <div class="kpi-item">
+            <div class="kpi-label">Green Patches</div>
+            <div class="kpi-value" id="kpi-patch-count">--</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Selected Zone Details -->
+      <section class="card" id="zone-details-card">
+        <h2 class="card-title">Selected Zone Profile</h2>
+        <div id="zone-details-body">
+          <p style="font-size: 11px; color: var(--color-text-secondary);">
+            Hover or click any cell/ward on the map to inspect historical canopy trends.
+          </p>
+        </div>
+      </section>
+
+      <!-- Citywide Trajectory Chart -->
+      <section class="card">
+        <h2 class="card-title">Historical & Forecast Trajectory</h2>
+        <div class="chart-container">
+          <canvas id="timeline-chart"></canvas>
+        </div>
+      </section>
+
+      <!-- Vegetation Tier Breakdown Chart -->
+      <section class="card">
+        <h2 class="card-title">Vegetation Density Tiers</h2>
+        <div class="chart-container">
+          <canvas id="tiers-chart"></canvas>
+        </div>
+      </section>
+
+      <!-- Top Loss Hotspots -->
+      <section class="card">
+        <h2 class="card-title">Top Canopy Loss Hotspots (2000-2025)</h2>
+        <div class="hotspot-list" id="hotspots-container">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+      <!-- Ground Truth Landmark Verification -->
+      <section class="card">
+        <h2 class="card-title">Reference Consistency Verification</h2>
+        <div id="landmark-verification-body" style="font-size: 11px; color: var(--color-text-secondary); display: flex; flex-direction: column; gap: 6px;">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
