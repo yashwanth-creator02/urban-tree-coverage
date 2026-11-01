@@ -1,0 +1,10 @@
+# Blockers & Mitigations Log
+
+Tracks technical hurdles, upstream API constraints, environmental edge cases, and implemented mitigations.
+
+| ID | Issue / Blocker | Status | Impact | Mitigation / Resolution |
+| --- | --- | --- | --- | --- |
+| BLK-001 | Google Earth Engine requires active Google Cloud Project or service account key | Documented & Stubbed | GEE adapter cannot execute end-to-end without credentials | Implemented full, syntactically verified GEE adapter stub (`src/adapters/gee.py`) that fails gracefully with actionable error instructions if credentials are not configured in `.env`. Default set to Microsoft Planetary Computer STAC. |
+| BLK-002 | Cloud coverage in monsoon season across Bengaluru | Mitigated | Heavy cloud and shadow contamination across imagery | Configured default observation season to dry-season window (January 1 - March 31) across all historical target years (2000, 2010, 2020, 2025) and applied strict `QA_PIXEL` bitmasking (excluding cloud, cloud shadow, cirrus, and dilated cloud). |
+| BLK-003 | Historical Landsat 5 scan line and sensor variance | Mitigated | Slight differences in spectral response functions between Landsat 5 TM and Landsat 8/9 OLI | Applied USGS Collection 2 Level-2 surface reflectance calibration (`DN * 0.0000275 - 0.2`) across all collections, clipping reflectance to physically valid range `[0.0, 1.0]`. |
+| BLK-004 | Bengaluru Ward boundaries shifting between census periods | Mitigated | Comparing ward-level statistics across 2000-2025 is confounded by 2007 BBMP expansion and ward delimitation | Established 1km invariant spatial grid as default primary zone unit, using ward boundaries as an auxiliary contextual layer. |

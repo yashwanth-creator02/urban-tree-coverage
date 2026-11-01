@@ -1,0 +1,93 @@
+# Urban Green-Cover Intelligence and Historical Change Analysis System
+# Single Control Panel Configuration
+
+project_name: "urban-green-cover-bengaluru"
+
+# Slot 1: Data Source
+# Options: planetary_computer | gee | sentinel_hub | local_files
+data_source: "planetary_computer"
+
+# Slot 2: Sensors
+# Options: landsat_c2 | sentinel2 | both
+sensors: "landsat_c2"
+
+# Slot 3: Target Years
+# Options: list of integer years
+years:
+  - 2000
+  - 2010
+  - 2020
+  - 2025
+
+# Slot 4: Season
+# Options: month range (1-12)
+season:
+  months: [1, 2, 3] # January through March (dry season)
+  max_cloud_cover_percent: 25.0
+
+# Slot 5: Composite Method
+# Options: median | mean | greenest_pixel
+composite: "median"
+
+# Slot 6: Green Index
+# Options: ndvi | evi | savi | msavi
+green_index: "ndvi"
+
+# Slot 7: Green Threshold & Classification Tiers
+# Options: fixed | otsu | adaptive | multi_class
+green_threshold:
+  method: "fixed"
+  cutoff: 0.40 # Justified in docs/DECISIONS.md: isolates dense/tree canopy foliage
+  classes:
+    non_vegetated: 0.20
+    sparse: 0.30
+    moderate: 0.40
+    dense: 1.00
+
+# Slot 8: Zones System
+# Options: grid_1km | grid_500m | wards_geojson | custom_file
+zones:
+  type: "grid_1km"
+  grid_size_meters: 1000
+  wards_path: "data/zones/bbmp_wards.geojson"
+  custom_path: ""
+
+# Slot 9: Change Detection Method
+# Options: difference_threshold | percent_change | trend
+change_method:
+  type: "difference_threshold"
+  gain_threshold: 0.10
+  loss_threshold: -0.10
+
+# Slot 10: Storage Adapter
+# Options: local | gcs
+storage:
+  type: "local"
+  local_processed_dir: "data/processed"
+  dashboard_data_dir: "dashboard/public/data"
+  gcs_bucket: ""
+
+# Slot 11: Dashboard Setup
+# Options: static_vite
+dashboard:
+  type: "static_vite"
+  port: 5173
+  title: "Bengaluru Urban Green Cover Intelligence (2000-2025)"
+
+# Slot 12: Forecast Projection
+# Options: linear_trend | arima | prophet | off
+forecast:
+  method: "linear_trend"
+  target_years: [2030, 2035]
+  disclaimer: "Linear projection based on 4 decadal intervals; subject to small-sample assumptions."
+
+# Slot 13: Area of Interest (AOI)
+# Format: [min_lon, min_lat, max_lon, max_lat] in EPSG:4326
+area_of_interest:
+  bbox: [77.46, 12.83, 77.75, 13.14]
+  epsg_utm: 32643 # UTM Zone 43N for metric grid and area calculations
+  validation_landmarks:
+    lalbagh: [77.5855, 12.9507]
+    cubbon_park: [77.5925, 12.9763]
+    peenya_industrial: [77.5140, 13.0290]
+    whitefield_itpl: [77.7472, 12.9863]
