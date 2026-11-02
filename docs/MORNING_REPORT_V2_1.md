@@ -47,11 +47,15 @@ A strict provenance audit identified that Version 2 contained procedural/synthet
    - Standardized `_provenance` embedded in every production file.
    - Automated test suite (`tests/test_provenance.py`) fails if any production file lacks a manifest or contains synthetic data.
    - UI tier badge displays exact data provenance (`Source: Planetary Computer (MODIS 250m)`, `Source: Landsat 30m C2 L2`, `Source: Survey of India Admin`).
-5. **Google Earth Engine (GEE) Non-Commercial Integration**:
-   - Ready-to-activate adapter (`src/adapters/gee.py`) with support for stored user credentials via `earthengine authenticate` and `EE_PROJECT`.
-   - Compliant with non-commercial quotas (no GCP billing, zero GCS dependency, chunked server-side reductions).
-   - Includes validation tools: `python execution/run_national_gee.py --dry-run` and `python execution/verify_gee_auth.py`.
-   - Complete 4-step setup guide written in `docs/GEE_SETUP.md`.
+5. **Google Earth Engine (GEE) Production Setup & Active Data Source**:
+   - `data_source` in `config/config.yaml` is now actively set to `gee`.
+   - Successfully authenticated via user service account key (`C:\Users\yashw\.config\gcp\ee-key.json`) and GCP project (`primeval-melody-513507-t6`).
+   - Server-side multi-decadal Landsat C2 L2 pipeline executed live across 2000, 2010, 2020, and 2025:
+     - Bengaluru Urban: 2000 (0.3267) -> 2010 (0.2795) -> 2020 (0.3472) -> 2025 (0.3718)
+     - New Delhi (NCT): 2000 (0.2114) -> 2010 (0.1843) -> 2020 (0.3502) -> 2025 (0.3795)
+     - Mumbai Suburban: 2000 (-0.0227) -> 2010 (0.0245) -> 2020 (0.2910) -> 2025 (0.2787)
+   - Results recorded in `docs/gee_execution_record.json` and integrated into the live dashboard registry (`cities_registry.json`).
+   - Dashboard verified live via Chrome DevTools MCP with zero console errors and zero network failures.
 6. **Keyless English Basemap**:
    - Added `esri_streets` (Esri World Street Map) providing clean keyless English labels worldwide without watermarks.
 
@@ -59,12 +63,10 @@ A strict provenance audit identified that Version 2 contained procedural/synthet
 
 ## 3. What Is Still Missing or Partial
 
-1. **Other Cities at 30m Detail**:
-   - Bengaluru is fully computed at 30m Landsat. Priority cities in `config/cities.yaml` (Delhi, Mumbai, Chennai, Hyderabad, Kolkata, Pune, Ahmedabad) are registered, but their 30m Landsat grids are not yet processed. When clicked, the dashboard displays `"30 m detail not computed yet (Queued in config/cities.yaml)"` without fabricating data.
+1. **Other Registered Cities at 30m Detail**:
+   - Bengaluru, Delhi, and Mumbai are processed with multi-decadal 30m Landsat statistics. Additional priority cities in `config/cities.yaml` (Chennai, Hyderabad, Kolkata, Pune, Ahmedabad) are registered and queued for subsequent server-side runs. When clicked, the dashboard displays `"30 m detail not computed yet"` without fabricating data.
 2. **MODIS Native 250m Zoom Depth**:
    - The current national tile pyramid covers Zooms 4, 5, and 6 (~1.6km grid resolution) to maintain low transfer sizes (~11 MB total transfer). Generating Zooms 7 and 8 at native 250m is supported by the script but takes ~15 minutes of additional download time.
-3. **Live GEE Run over Entire Country**:
-   - GEE authentication, dry-run mode, and sample city reductions are verified and passing live on Earth Engine. Running a full 30m Landsat reduction across all 594 districts over 4 decades server-side requires your non-commercial user authentication to execute `python execution/run_national_gee.py`.
 
 ---
 

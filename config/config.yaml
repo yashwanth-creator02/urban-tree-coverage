@@ -5,7 +5,7 @@ project_name: "urban-green-cover-bengaluru"
 
 # Slot 1: Data Source
 # Options: planetary_computer | gee | sentinel_hub | local_files
-data_source: "planetary_computer"
+data_source: "gee"
 
 # Slot 2: Sensors
 # Options: landsat_c2 | sentinel2 | both

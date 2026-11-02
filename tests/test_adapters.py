@@ -38,7 +38,8 @@ def test_factory_returns_configured_defaults():
     config = load_config("config/config.yaml")
 
     ds = get_data_source_adapter(config)
-    assert isinstance(ds, PlanetaryComputerAdapter)
+    assert isinstance(ds, DataSourceAdapter)
+    assert ds.name in ["planetary_computer", "gee"]
 
     za = get_zone_adapter(config)
     assert isinstance(za, GridZoneAdapter)

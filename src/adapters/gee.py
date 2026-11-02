@@ -188,37 +188,39 @@ class GoogleEarthEngineAdapter(DataSourceAdapter):
         """
         ee = self._ee
 
-        # Select collection based on active mission
-        if year <= 2011:
-            col_id = "LANDSAT/LT05/C02/T1_L2"
-            band_nir = "SR_B4"
-            band_red = "SR_B3"
-            band_blue = "SR_B1"
-            is_oli = False
-        elif year == 2012:
-            col_id = "LANDSAT/LE07/C02/T1_L2"
-            band_nir = "SR_B4"
-            band_red = "SR_B3"
-            band_blue = "SR_B1"
-            is_oli = False
-        elif 2013 <= year <= 2021:
-            col_id = "LANDSAT/LC08/C02/T1_L2"
-            band_nir = "SR_B5"
-            band_red = "SR_B4"
-            band_blue = "SR_B2"
-            is_oli = True
-        else:
-            col_id = "LANDSAT/LC09/C02/T1_L2"
-            band_nir = "SR_B5"
-            band_red = "SR_B4"
-            band_blue = "SR_B2"
-            is_oli = True
-
         start_date = f"{year}-{min(season_months):02d}-01"
         # Determine last day of season month
         max_m = max(season_months)
         last_day = 31 if max_m in [1, 3, 5, 7, 8, 10, 12] else (28 if max_m == 2 else 30)
         end_date = f"{year}-{max_m:02d}-{last_day:02d}"
+
+        # Select collection based on active mission
+        if year <= 2011:
+            col_l5 = ee.ImageCollection("LANDSAT/LT05/C02/T1_L2").filterBounds(geometry_ee).filterDate(start_date, end_date).filter(ee.Filter.lt("CLOUD_COVER", max_cloud_cover))
+            col_l7 = ee.ImageCollection("LANDSAT/LE07/C02/T1_L2").filterBounds(geometry_ee).filterDate(start_date, end_date).filter(ee.Filter.lt("CLOUD_COVER", max_cloud_cover))
+            raw_col = col_l5.merge(col_l7)
+            band_nir = "SR_B4"
+            band_red = "SR_B3"
+            band_blue = "SR_B1"
+            is_oli = False
+        elif year == 2012:
+            raw_col = ee.ImageCollection("LANDSAT/LE07/C02/T1_L2").filterBounds(geometry_ee).filterDate(start_date, end_date).filter(ee.Filter.lt("CLOUD_COVER", max_cloud_cover))
+            band_nir = "SR_B4"
+            band_red = "SR_B3"
+            band_blue = "SR_B1"
+            is_oli = False
+        elif 2013 <= year <= 2021:
+            raw_col = ee.ImageCollection("LANDSAT/LC08/C02/T1_L2").filterBounds(geometry_ee).filterDate(start_date, end_date).filter(ee.Filter.lt("CLOUD_COVER", max_cloud_cover))
+            band_nir = "SR_B5"
+            band_red = "SR_B4"
+            band_blue = "SR_B2"
+            is_oli = True
+        else:
+            raw_col = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2").filterBounds(geometry_ee).filterDate(start_date, end_date).filter(ee.Filter.lt("CLOUD_COVER", max_cloud_cover))
+            band_nir = "SR_B5"
+            band_red = "SR_B4"
+            band_blue = "SR_B2"
+            is_oli = True
 
         def mask_and_scale(img):
             qa = img.select("QA_PIXEL")
@@ -245,13 +247,6 @@ class GoogleEarthEngineAdapter(DataSourceAdapter):
             # NDVI = (NIR - Red) / (NIR + Red)
             ndvi = nir.subtract(red).divide(nir.add(red)).rename("ndvi")
             return img.addBands([red, nir, blue, ndvi]).updateMask(cloud_mask)
-
-        raw_col = (
-            ee.ImageCollection(col_id)
-            .filterBounds(geometry_ee)
-            .filterDate(start_date, end_date)
-            .filter(ee.Filter.lt("CLOUD_COVER", max_cloud_cover))
-        )
 
         composite = raw_col.map(mask_and_scale).median().clip(geometry_ee)
         return composite

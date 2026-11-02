@@ -5,8 +5,8 @@ The Urban Green-Cover Intelligence System is designed around modular adapters. E
 ---
 
 ## 1. Data Source (`data_source`)
-- **Default**: `planetary_computer`
-- **Alternatives**: `gee` | `sentinel_hub` | `local_files`
+- **Active Selection**: `gee` (configured with service account and GCP project)
+- **Alternatives**: `planetary_computer` (default keyless fallback) | `sentinel_hub` | `local_files`
 - **Specification**:
   - `planetary_computer`: Uses Microsoft Planetary Computer STAC API to search Landsat Collection 2 Level-2 products, signs asset URLs, and streams/crops windowed bands via GDAL/rasterio without authentication keys.
   - `gee`: Google Earth Engine API. Requires GCP authentication. Implemented with `ee.Initialize(credentials=...)` supporting Service Account or ADC project ID.

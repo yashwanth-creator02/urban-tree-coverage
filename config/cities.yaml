@@ -17,23 +17,33 @@ cities:
     id: "delhi"
     name: "Delhi (NCT)"
     state: "Delhi"
-    status: "pending"
+    status: "computed_gee"
     center: [77.2090, 28.6139]
     bbox: [76.84, 28.40, 77.35, 28.88]
     epsg_utm: 32643
     grid_size_m: 1000
-    description: "National Capital Territory; 30 m detail pending processing."
+    gee_landsat_mean_ndvi:
+      2000: 0.2114
+      2010: 0.1843
+      2020: 0.3502
+      2025: 0.3795
+    description: "National Capital Territory; processed server-side via Google Earth Engine Landsat 30m."
 
   mumbai:
     id: "mumbai"
     name: "Mumbai"
     state: "Maharashtra"
-    status: "pending"
+    status: "computed_gee"
     center: [72.8777, 19.0760]
     bbox: [72.77, 18.89, 73.01, 19.28]
     epsg_utm: 32643
     grid_size_m: 1000
-    description: "Greater Mumbai metropolitan region; 30 m detail pending processing."
+    gee_landsat_mean_ndvi:
+      2000: -0.0227
+      2010: 0.0245
+      2020: 0.2910
+      2025: 0.2787
+    description: "Greater Mumbai metropolitan region; processed server-side via Google Earth Engine Landsat 30m."
 
   chennai:
     id: "chennai"

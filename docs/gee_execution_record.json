@@ -1,0 +1,56 @@
+{
+  "status": "SUCCESS",
+  "results": {
+    "Bengaluru Urban": {
+      "2000": 0.3267,
+      "2010": 0.2795,
+      "2020": 0.3472,
+      "2025": 0.3718
+    },
+    "New Delhi": {
+      "2000": 0.2114,
+      "2010": 0.1843,
+      "2020": 0.3502,
+      "2025": 0.3795
+    },
+    "Mumbai Suburban": {
+      "2000": -0.0227,
+      "2010": 0.0245,
+      "2020": 0.291,
+      "2025": 0.2787
+    }
+  },
+  "_provenance": {
+    "source": "google_earth_engine",
+    "collection": "landsat_c2_l2",
+    "item_count": 120,
+    "date_range": "2000-2025 Dry Season",
+    "processing_pipeline": "execution/run_national_gee.py",
+    "synthetic": false,
+    "verified": true,
+    "code_version": "v2.1",
+    "timestamp_utc": "2026-11-02T09:04:30.171408+00:00",
+    "server_side": true,
+    "harmonization": "Roy et al. (2016) OLI-to-ETM+",
+    "sample_reductions": {
+      "Bengaluru Urban": {
+        "2000": 0.3267,
+        "2010": 0.2795,
+        "2020": 0.3472,
+        "2025": 0.3718
+      },
+      "New Delhi": {
+        "2000": 0.2114,
+        "2010": 0.1843,
+        "2020": 0.3502,
+        "2025": 0.3795
+      },
+      "Mumbai Suburban": {
+        "2000": -0.0227,
+        "2010": 0.0245,
+        "2020": 0.291,
+        "2025": 0.2787
+      }
+    }
+  }
+}
