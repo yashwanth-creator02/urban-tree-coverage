@@ -142,5 +142,20 @@
       },
       "scenes_used": 2
     }
+  },
+  "_provenance": {
+    "source": "microsoft_planetary_computer",
+    "collection": "landsat-c2-l2",
+    "item_count": 16,
+    "date_range": "2000-2025 Jan-Mar dry season",
+    "processing_pipeline": "execution/run_pipeline.py",
+    "synthetic": false,
+    "verified": true,
+    "code_version": "v2.1",
+    "timestamp_utc": "2026-11-02T08:13:52.272951+00:00",
+    "sensor_family": "Landsat 5 TM, Landsat 8 OLI, Landsat 9 OLI-2",
+    "resolution_m": 30,
+    "aoi": "Bengaluru Bounding Box [77.46, 12.83, 77.75, 13.14]",
+    "calibration": "USGS C2 L2 Surface Reflectance (scale=0.0000275, offset=-0.2) + 16-bit QA_PIXEL masking"
   }
 }

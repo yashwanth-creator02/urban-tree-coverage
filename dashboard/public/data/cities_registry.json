@@ -152,5 +152,12 @@
       "grid_size_m": 1000,
       "description": "Ahmedabad municipal corporation area; 30 m detail pending processing."
     }
+  },
+  "_provenance": {
+    "source": "official_municipal_coordinates",
+    "collection": "tier3_city_registry",
+    "synthetic": false,
+    "verified": true,
+    "code_version": "v2.1"
   }
 }

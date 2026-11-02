@@ -162,6 +162,10 @@ async function loadDatasets() {
     lossHotspots = hotRes.status === "fulfilled" ? hotRes.value : null;
     forecastData = fcRes.status === "fulfilled" ? fcRes.value : null;
 
+    if (statesData && statesData._provenance) state.statesProvenance = statesData._provenance;
+    if (districtsData && districtsData._provenance) state.districtsProvenance = districtsData._provenance;
+    if (cityGridData && cityGridData._provenance) state.cityProvenance = cityGridData._provenance;
+
     initVectorLayers();
     initCityMarkers();
     buildSearchIndex();
@@ -265,6 +269,17 @@ function getFeatureStyle(feature, type) {
   const p = feature.properties;
   const isChange = state.mode === "change";
 
+  // If feature has no real computed data yet, render as subtle uncomputed outline
+  if (p.has_real_data === false || p[`green_pct_${state.year}`] === undefined) {
+    return {
+      fillColor: "#161b22",
+      weight: type === "state" ? 1.5 : 0.6,
+      opacity: 0.6,
+      color: type === "state" ? "#484f58" : "#30363d",
+      fillOpacity: 0.15,
+    };
+  }
+
   if (isChange) {
     const delta = p.net_change_pp || p.net_change_pct || 0;
     let col = "#484f58";
@@ -343,6 +358,26 @@ function selectFeature(feature, type) {
     subEl.innerText = `Physical Metric Grid (1.0 km²) | Lon: ${p.centroid_lon}, Lat: ${p.centroid_lat}`;
   }
 
+  // Check if feature has real computed satellite metrics
+  const hasReal = p.has_real_data !== false && p[`green_pct_${state.year}`] !== undefined;
+
+  if (!hasReal) {
+    statPct.innerText = "Pending";
+    statArea.innerText = "No real data yet";
+    statShift.innerText = "Pending";
+    statShift.className = "stat-value";
+
+    qualityRating.innerText = "N/A";
+    qualityBar.style.width = "0%";
+    qualitySub.innerText = "No real data yet (Pending satellite ingestion)";
+
+    if (selectedTimelineChart) {
+      selectedTimelineChart.data.datasets[0].data = [];
+      selectedTimelineChart.update();
+    }
+    return;
+  }
+
   const curPct = p[`green_pct_${state.year}`] || 0;
   const curArea = p[`green_km2_${state.year}`] || 0;
   const shift = p.net_change_pp || p.net_change_pct || 0;
@@ -352,12 +387,18 @@ function selectFeature(feature, type) {
   statShift.innerText = `${shift >= 0 ? "+" : ""}${shift} pp`;
   statShift.className = `stat-value ${shift >= 0 ? "forest-text" : "copper-text"}`;
 
-  // Real Data-Quality Indicator
-  const validFrac = p.valid_pixel_fraction !== undefined ? p.valid_pixel_fraction : 0.99;
-  const qualPct = Math.round(validFrac * 100);
-  qualityRating.innerText = `${qualPct}%`;
-  qualityBar.style.width = `${qualPct}%`;
-  qualitySub.innerText = `${qualPct}% valid pixel fraction; QA_PIXEL clear-sky screened`;
+  // Real Data-Quality Indicator (Zero fake fallbacks)
+  const validFrac = p.valid_pixel_fraction !== undefined ? p.valid_pixel_fraction : null;
+  if (validFrac !== null) {
+    const qualPct = Math.round(validFrac * 100);
+    qualityRating.innerText = `${qualPct}%`;
+    qualityBar.style.width = `${qualPct}%`;
+    qualitySub.innerText = `${qualPct}% valid pixel fraction; clear-sky screened`;
+  } else {
+    qualityRating.innerText = "N/A";
+    qualityBar.style.width = "0%";
+    qualitySub.innerText = "Observation quality uncomputed";
+  }
 
   renderSelectedTimelineChart(p);
 }
@@ -377,6 +418,7 @@ function updateTierByZoom() {
   state.activeTier = targetTier;
   updateTierShield(targetTier, z);
   updateActiveLayers();
+  renderHotspotsList();
 }
 
 function updateTierShield(tier, zoom) {
@@ -384,14 +426,20 @@ function updateTierShield(tier, zoom) {
   const desc = document.getElementById("tier-desc");
 
   if (tier === "national") {
+    const prov = state.statesProvenance;
+    const srcLabel = prov && prov.source ? `Source: ${prov.source}` : "Source: Microsoft Planetary Computer (MODIS 250m)";
     badge.innerText = "TIER 1: NATIONAL";
-    desc.innerText = "MODIS 250m Pre-Monsoon Proxy (Zoom " + zoom + ")";
+    desc.innerText = `MODIS 250m Pre-Monsoon Proxy | ${srcLabel}`;
   } else if (tier === "district") {
+    const prov = state.districtsProvenance;
+    const srcLabel = prov && prov.source ? `Source: ${prov.source}` : "Source: Survey of India Admin";
     badge.innerText = "TIER 2: DISTRICT";
-    desc.innerText = "Zonal Aggregation (594 Units, Zoom " + zoom + ")";
+    desc.innerText = `Zonal Aggregation (594 Units) | ${srcLabel}`;
   } else {
+    const prov = state.cityProvenance;
+    const srcLabel = prov && prov.source ? `Source: ${prov.source}` : "Source: Landsat 30m C2 L2";
     badge.innerText = "TIER 3: CITY DRILL-DOWN";
-    desc.innerText = "Landsat 30m Dry Season (Zoom " + zoom + ")";
+    desc.innerText = `Landsat 30m Dry Season | ${srcLabel}`;
   }
 }
 
@@ -620,18 +668,56 @@ function renderSelectedTimelineChart(properties) {
 // Hotspots List Renderer
 function renderHotspotsList() {
   const container = document.getElementById("hotspots-list");
-  if (!container || !lossHotspots || !lossHotspots.hotspots) return;
-
+  if (!container) return;
   container.innerHTML = "";
-  lossHotspots.hotspots.slice(0, 5).forEach((h) => {
+
+  const tier = state.tierSelection === "auto" ? state.activeTier : state.tierSelection;
+
+  let list = [];
+  if (tier === "city") {
+    if (lossHotspots) {
+      list = Array.isArray(lossHotspots) ? lossHotspots : (lossHotspots.hotspots || []);
+    }
+  } else if (tier === "district" && districtsData && districtsData.features) {
+    // Dynamically rank top loss districts if real computed data exists
+    const computedDistricts = districtsData.features.filter((f) => f.properties && f.properties.net_change_pp !== undefined);
+    computedDistricts.sort((a, b) => a.properties.net_change_pp - b.properties.net_change_pp);
+    list = computedDistricts.slice(0, 5).map((d, i) => ({
+      rank: i + 1,
+      zone_label: `${d.properties.name}, ${d.properties.state_name || ""}`,
+      net_change_pp: d.properties.net_change_pp,
+      feature: d,
+    }));
+  } else if (tier === "national" && statesData && statesData.features) {
+    const computedStates = statesData.features.filter((f) => f.properties && f.properties.net_change_pp !== undefined);
+    computedStates.sort((a, b) => a.properties.net_change_pp - b.properties.net_change_pp);
+    list = computedStates.slice(0, 5).map((s, i) => ({
+      rank: i + 1,
+      zone_label: s.properties.name,
+      net_change_pp: s.properties.net_change_pp,
+      feature: s,
+    }));
+  }
+
+  if (list.length === 0) {
+    container.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:6px 0;">No loss hotspots recorded at current tier.</div>';
+    return;
+  }
+
+  list.slice(0, 5).forEach((h) => {
     const item = document.createElement("div");
     item.className = "hotspot-item";
     item.innerHTML = `
       <span class="hotspot-title">#${h.rank} ${h.zone_label}</span>
-      <span class="hotspot-val">${h.net_change_pp || h.net_change_pct} pp</span>
+      <span class="hotspot-val">${h.net_change_pp} pp</span>
     `;
     item.addEventListener("click", () => {
-      map.flyTo([h.centroid_lat, h.centroid_lon], 13);
+      if (h.centroid_lat && h.centroid_lon) {
+        map.flyTo([h.centroid_lat, h.centroid_lon], 13);
+      } else if (h.feature) {
+        map.fitBounds(L.geoJSON(h.feature).getBounds());
+        renderEntityDetails(h.feature, tier === "national" ? "state" : "district");
+      }
     });
     container.appendChild(item);
   });

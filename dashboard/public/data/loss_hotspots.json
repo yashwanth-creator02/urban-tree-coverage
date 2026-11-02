@@ -1,152 +1,169 @@
-[
-  {
-    "zone_id": "grid_13_31",
-    "label": "Cell R13 C31",
-    "centroid_lon": 77.75131,
-    "centroid_lat": 12.94906,
-    "green_pct_2000": 95.76,
-    "green_pct_2025": 15.76,
-    "net_change_pct": -80.0,
-    "loss_km2": 0.897
-  },
-  {
-    "zone_id": "grid_12_27",
-    "label": "Cell R12 C27",
-    "centroid_lon": 77.71438,
-    "centroid_lat": 12.94042,
-    "green_pct_2000": 90.91,
-    "green_pct_2025": 20.68,
-    "net_change_pct": -70.23,
-    "loss_km2": 0.8565
-  },
-  {
-    "zone_id": "grid_12_26",
-    "label": "Cell R12 C26",
-    "centroid_lon": 77.70517,
-    "centroid_lat": 12.94051,
-    "green_pct_2000": 88.15,
-    "green_pct_2025": 20.23,
-    "net_change_pct": -67.92,
-    "loss_km2": 0.8574
-  },
-  {
-    "zone_id": "grid_11_07",
-    "label": "Cell R11 C07",
-    "centroid_lon": 77.53009,
-    "centroid_lat": 12.93323,
-    "green_pct_2000": 77.01,
-    "green_pct_2025": 16.93,
-    "net_change_pct": -60.08,
-    "loss_km2": 0.8093
-  },
-  {
-    "zone_id": "grid_28_05",
-    "label": "Cell R28 C05",
-    "centroid_lon": 77.51322,
-    "centroid_lat": 13.08699,
-    "green_pct_2000": 67.4,
-    "green_pct_2025": 7.99,
-    "net_change_pct": -59.41,
-    "loss_km2": 0.7713
-  },
-  {
-    "zone_id": "grid_12_24",
-    "label": "Cell R12 C24",
-    "centroid_lon": 77.68675,
-    "centroid_lat": 12.9407,
-    "green_pct_2000": 89.22,
-    "green_pct_2025": 31.82,
-    "net_change_pct": -57.4,
-    "loss_km2": 0.828
-  },
-  {
-    "zone_id": "grid_28_06",
-    "label": "Cell R28 C06",
-    "centroid_lon": 77.52243,
-    "centroid_lat": 13.0869,
-    "green_pct_2000": 57.39,
-    "green_pct_2025": 2.02,
-    "net_change_pct": -55.37,
-    "loss_km2": 0.8081
-  },
-  {
-    "zone_id": "grid_33_11",
-    "label": "Cell R33 C11",
-    "centroid_lon": 77.56898,
-    "centroid_lat": 13.13161,
-    "green_pct_2000": 74.06,
-    "green_pct_2025": 19.43,
-    "net_change_pct": -54.63,
-    "loss_km2": 0.6996
-  },
-  {
-    "zone_id": "grid_10_04",
-    "label": "Cell R10 C04",
-    "centroid_lon": 77.50237,
-    "centroid_lat": 12.92447,
-    "green_pct_2000": 76.02,
-    "green_pct_2025": 22.19,
-    "net_change_pct": -53.83,
-    "loss_km2": 0.7451
-  },
-  {
-    "zone_id": "grid_24_16",
-    "label": "Cell R24 C16",
-    "centroid_lon": 77.61421,
-    "centroid_lat": 13.04985,
-    "green_pct_2000": 68.6,
-    "green_pct_2025": 15.14,
-    "net_change_pct": -53.46,
-    "loss_km2": 0.7976
-  },
-  {
-    "zone_id": "grid_11_23",
-    "label": "Cell R11 C23",
-    "centroid_lon": 77.67744,
-    "centroid_lat": 12.93176,
-    "green_pct_2000": 78.33,
-    "green_pct_2025": 25.9,
-    "net_change_pct": -52.43,
-    "loss_km2": 0.7567
-  },
-  {
-    "zone_id": "grid_09_03",
-    "label": "Cell R09 C03",
-    "centroid_lon": 77.49307,
-    "centroid_lat": 12.91552,
-    "green_pct_2000": 87.17,
-    "green_pct_2025": 35.47,
-    "net_change_pct": -51.7,
-    "loss_km2": 0.7442
-  },
-  {
-    "zone_id": "grid_10_03",
-    "label": "Cell R10 C03",
-    "centroid_lon": 77.49316,
-    "centroid_lat": 12.92456,
-    "green_pct_2000": 69.79,
-    "green_pct_2025": 20.02,
-    "net_change_pct": -49.77,
-    "loss_km2": 0.6749
-  },
-  {
-    "zone_id": "grid_25_11",
-    "label": "Cell R25 C11",
-    "centroid_lon": 77.56823,
-    "centroid_lat": 13.05935,
-    "green_pct_2000": 75.48,
-    "green_pct_2025": 28.1,
-    "net_change_pct": -47.38,
-    "loss_km2": 0.7273
-  },
-  {
-    "zone_id": "grid_23_19",
-    "label": "Cell R23 C19",
-    "centroid_lon": 77.64175,
-    "centroid_lat": 13.04054,
-    "green_pct_2000": 59.09,
-    "green_pct_2025": 12.03,
-    "net_change_pct": -47.06,
-    "loss_km2": 0.7496
+{
+  "hotspots": [
+    {
+      "zone_id": "grid_13_31",
+      "label": "Cell R13 C31",
+      "centroid_lon": 77.75131,
+      "centroid_lat": 12.94906,
+      "green_pct_2000": 95.76,
+      "green_pct_2025": 15.76,
+      "net_change_pct": -80.0,
+      "loss_km2": 0.897
+    },
+    {
+      "zone_id": "grid_12_27",
+      "label": "Cell R12 C27",
+      "centroid_lon": 77.71438,
+      "centroid_lat": 12.94042,
+      "green_pct_2000": 90.91,
+      "green_pct_2025": 20.68,
+      "net_change_pct": -70.23,
+      "loss_km2": 0.8565
+    },
+    {
+      "zone_id": "grid_12_26",
+      "label": "Cell R12 C26",
+      "centroid_lon": 77.70517,
+      "centroid_lat": 12.94051,
+      "green_pct_2000": 88.15,
+      "green_pct_2025": 20.23,
+      "net_change_pct": -67.92,
+      "loss_km2": 0.8574
+    },
+    {
+      "zone_id": "grid_11_07",
+      "label": "Cell R11 C07",
+      "centroid_lon": 77.53009,
+      "centroid_lat": 12.93323,
+      "green_pct_2000": 77.01,
+      "green_pct_2025": 16.93,
+      "net_change_pct": -60.08,
+      "loss_km2": 0.8093
+    },
+    {
+      "zone_id": "grid_28_05",
+      "label": "Cell R28 C05",
+      "centroid_lon": 77.51322,
+      "centroid_lat": 13.08699,
+      "green_pct_2000": 67.4,
+      "green_pct_2025": 7.99,
+      "net_change_pct": -59.41,
+      "loss_km2": 0.7713
+    },
+    {
+      "zone_id": "grid_12_24",
+      "label": "Cell R12 C24",
+      "centroid_lon": 77.68675,
+      "centroid_lat": 12.9407,
+      "green_pct_2000": 89.22,
+      "green_pct_2025": 31.82,
+      "net_change_pct": -57.4,
+      "loss_km2": 0.828
+    },
+    {
+      "zone_id": "grid_28_06",
+      "label": "Cell R28 C06",
+      "centroid_lon": 77.52243,
+      "centroid_lat": 13.0869,
+      "green_pct_2000": 57.39,
+      "green_pct_2025": 2.02,
+      "net_change_pct": -55.37,
+      "loss_km2": 0.8081
+    },
+    {
+      "zone_id": "grid_33_11",
+      "label": "Cell R33 C11",
+      "centroid_lon": 77.56898,
+      "centroid_lat": 13.13161,
+      "green_pct_2000": 74.06,
+      "green_pct_2025": 19.43,
+      "net_change_pct": -54.63,
+      "loss_km2": 0.6996
+    },
+    {
+      "zone_id": "grid_10_04",
+      "label": "Cell R10 C04",
+      "centroid_lon": 77.50237,
+      "centroid_lat": 12.92447,
+      "green_pct_2000": 76.02,
+      "green_pct_2025": 22.19,
+      "net_change_pct": -53.83,
+      "loss_km2": 0.7451
+    },
+    {
+      "zone_id": "grid_24_16",
+      "label": "Cell R24 C16",
+      "centroid_lon": 77.61421,
+      "centroid_lat": 13.04985,
+      "green_pct_2000": 68.6,
+      "green_pct_2025": 15.14,
+      "net_change_pct": -53.46,
+      "loss_km2": 0.7976
+    },
+    {
+      "zone_id": "grid_11_23",
+      "label": "Cell R11 C23",
+      "centroid_lon": 77.67744,
+      "centroid_lat": 12.93176,
+      "green_pct_2000": 78.33,
+      "green_pct_2025": 25.9,
+      "net_change_pct": -52.43,
+      "loss_km2": 0.7567
+    },
+    {
+      "zone_id": "grid_09_03",
+      "label": "Cell R09 C03",
+      "centroid_lon": 77.49307,
+      "centroid_lat": 12.91552,
+      "green_pct_2000": 87.17,
+      "green_pct_2025": 35.47,
+      "net_change_pct": -51.7,
+      "loss_km2": 0.7442
+    },
+    {
+      "zone_id": "grid_10_03",
+      "label": "Cell R10 C03",
+      "centroid_lon": 77.49316,
+      "centroid_lat": 12.92456,
+      "green_pct_2000": 69.79,
+      "green_pct_2025": 20.02,
+      "net_change_pct": -49.77,
+      "loss_km2": 0.6749
+    },
+    {
+      "zone_id": "grid_25_11",
+      "label": "Cell R25 C11",
+      "centroid_lon": 77.56823,
+      "centroid_lat": 13.05935,
+      "green_pct_2000": 75.48,
+      "green_pct_2025": 28.1,
+      "net_change_pct": -47.38,
+      "loss_km2": 0.7273
+    },
+    {
+      "zone_id": "grid_23_19",
+      "label": "Cell R23 C19",
+      "centroid_lon": 77.64175,
+      "centroid_lat": 13.04054,
+      "green_pct_2000": 59.09,
+      "green_pct_2025": 12.03,
+      "net_change_pct": -47.06,
+      "loss_km2": 0.7496
+    }
+  ],
+  "_provenance": {
+    "source": "microsoft_planetary_computer",
+    "collection": "landsat-c2-l2",
+    "item_count": 16,
+    "date_range": "2000-2025 Jan-Mar dry season",
+    "processing_pipeline": "execution/run_pipeline.py",
+    "synthetic": false,
+    "verified": true,
+    "code_version": "v2.1",
+    "timestamp_utc": "2026-11-02T08:13:52.272951+00:00",
+    "sensor_family": "Landsat 5 TM, Landsat 8 OLI, Landsat 9 OLI-2",
+    "resolution_m": 30,
+    "aoi": "Bengaluru Bounding Box [77.46, 12.83, 77.75, 13.14]",
+    "calibration": "USGS C2 L2 Surface Reflectance (scale=0.0000275, offset=-0.2) + 16-bit QA_PIXEL masking"
   }
-]
+}
