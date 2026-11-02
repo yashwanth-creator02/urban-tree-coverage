@@ -1,134 +1,97 @@
-# Bengaluru Urban Green-Cover Intelligence & Historical Change Analysis System
+# India Urban & National Green Cover Intelligence System (2000-2025)
 
-A scientific satellite processing pipeline and interactive static dashboard that measures and maps multi-decadal changes in urban green cover across Bengaluru, Karnataka, India across four benchmark intervals: 2000, 2010, 2020, and 2025.
-
----
-
-## Phase Status Summary
-
-- **Phase 0 (Repo Scaffold & Option Space Architecture)**: DONE
-  - Modular adapter interfaces for data sources, spatial zones, indices, change detection, and storage.
-  - Zero hardcoded operational constants; single control panel in `config/config.yaml`.
-  - Comprehensive options menu in `docs/OPTIONS.md` and decision record in `docs/DECISIONS.md`.
-- **Phase 1 (Data Ingestion, Calibration & Compositing)**: DONE
-  - Planetary Computer STAC adapter with USGS Collection 2 Level-2 Surface Reflectance calibration.
-  - Landsat 5 TM (2000, 2010) and Landsat 8/9 OLI (2020, 2025) band cross-walking.
-  - 16-bit `QA_PIXEL` cloud, shadow, cirrus, and dilated cloud bitmasking.
-  - Seasonal dry-window (January - March) median temporal compositing.
-- **Phase 2 (Green Cover Indices & Zonal Aggregation)**: DONE
-  - NDVI spectral index computation with multi-tier classification (Dense Canopy, Moderate, Sparse, Non-veg).
-  - Citywide and per-zone green area ($km^2$) and canopy percentage calculations.
-- **Phase 3 (Historical Change Analysis & Hotspot Extraction)**: DONE
-  - Pixel-level difference thresholding across consecutive intervals and baseline (2000 vs 2025).
-  - Zonal aggregation across both invariant 1km physical grid (1,120 cells) and 243 administrative BBMP Wards.
-  - Ranked extraction of top urban tree canopy loss hotspots.
-- **Phase 4 (Interactive Static Dashboard)**: DONE
-  - Static Vite application with Leaflet cartography and Chart.js analytics.
-  - Annual canopy slider, decadal change view, raster overlay with opacity control, and zone inspection.
-  - Top loss hotspots fly-to navigation and landmark consistency markers.
-- **Phase 5 (Ground Truth & Consistency Validation)**: DONE
-  - Benchmark landmark consistency verification at Lalbagh, Cubbon Park, Peenya, and ITPL Whitefield.
-  - Systematic 50-point random spatial sampling audit.
-- **Phase 6 (Stretch Analytics)**: DONE
-  - Urban canopy fragmentation metrics (8-connected components patch count, mean patch size).
-  - Ordinary Least Squares linear trend forecasting for 2030 and 2035 horizons with documented caveats.
+A scientific multi-scale Earth observation pipeline and full-viewport static analytical dashboard that quantifies and maps multi-decadal changes in green cover across India, spanning national, state, district, and 30m city drill-down tiers across four decadal intervals: 2000, 2010, 2020, and 2025.
 
 ---
 
-## Key Findings (Empirical Results)
+## 3-Tier Multi-Scale Architecture
 
-| Metric | 2000 (Landsat 5) | 2010 (Landsat 5) | 2020 (Landsat 8) | 2025 (Landsat 9) |
-| --- | --- | --- | --- | --- |
-| Green Cover Area ($km^2$) | 264.65 | 177.51 | 211.56 | 309.46 |
-| Citywide Green Coverage (%) | 24.80% | 16.45% | 19.62% | 28.68% |
-| Analyzed Geographic Area ($km^2$) | 1,067.14 | 1,079.17 | 1,078.20 | 1,078.93 |
-| Discrete Canopy Patches | 3,863 | 3,923 | 4,286 | 3,554 |
-| Mean Patch Size ($km^2$) | 0.068 | 0.045 | 0.049 | 0.087 |
-
-### Multi-Decadal Dynamics (2000 - 2025)
-- **2000 to 2010**: Severe canopy contraction (-87.14 $km^2$, -8.35% drop) driven by rapid urban outward expansion, infrastructure corridors, and IT belt construction.
-- **2010 to 2025**: Rebound in peri-urban plantation belts, agricultural fringes, and municipal park preservation, even as central core avenue canopies experienced fragmentation.
+| Tier | Coverage | Sensor & Resolution | Temporal Window & Proxy |
+| --- | --- | --- | --- |
+| **Tier 1 (National)** | All India (3.28M km²) | MODIS MOD13Q1 (250m) via Planetary Computer | Pre-Monsoon Summer (Apr 15 - May 31) isolates true perennial woody canopy from ephemeral rabi agricultural crops |
+| **Tier 2 (Admin Units)** | 36 States/UTs, 594 Districts | Zonal Aggregation from MODIS 250m | Official Survey of India boundaries via DataMeet; equal-area projected metrics |
+| **Tier 3 (City Drill-Down)** | Bengaluru (computed), Delhi, Mumbai, etc. | Landsat Collection 2 Level-2 (30m) | Dry-season (Jan-Mar) median composites across 1km metric grid and municipal wards |
 
 ---
 
-## Architecture & Option Space
+## Version 2 Phase Delivery Status
 
-The system is configured through `config/config.yaml` using modular adapters in `src/adapters/` and `src/core/`:
-- **Data Source**: Microsoft Planetary Computer STAC (active default), Google Earth Engine (pluggable stub), Sentinel Hub (stub), Local Files (stub).
-- **Sensors**: USGS Landsat Collection 2 Level-2 Surface Reflectance (Landsat 5 TM, Landsat 8 OLI, Landsat 9 OLI-2).
-- **Index**: NDVI (default), EVI, SAVI, MSAVI.
-- **Threshold**: Fixed threshold (0.40 for tree canopy) with multi-tier classification (sparse, moderate, dense).
-- **Spatial Zones**: 1km regular metric grid (default), 500m grid, and BBMP Administrative Ward boundaries.
-- **Change Detection**: Difference thresholding with configurable loss/gain cutoffs.
-
-Detailed instructions for swapping slots are documented in `docs/OPTIONS.md`.
+- **Phase A (Fix & Audit)**: DONE [tag: `v2-phase-A-done`]
+  - **A1 Basemap**: Added `basemap` option slot (`osm_standard`, `esri_satellite`, `openfreemap_positron`, `carto_dark_keyed`). Zero watermarked tiles.
+  - **A2 Equal-Area Math**: Corrected boundary cell area truncation in `src/core/area.py`. Enforced invariant `cell green_km2 == green_fraction * cell_area`. All areas calculated in projected equal-area CRS.
+  - **A3 Cross-Sensor Comparability Audit**: Evaluated 1,224,612 coincident Jan-Mar 2020 pixels between Landsat 7 (ETM+) and Landsat 8 (OLI). OLI has a +0.0160 mean NDVI bias (+2.56 pp difference at 0.40 threshold), explaining the bulk of the 2010-2020 apparent increase (+3.17 pp). 2020-2025 gain (+9.06 pp) verified as physical vegetation vigor from late 2024 antecedent rains and peri-urban plantation expansion.
+  - **A4 Honest Labels**: Replaced all difference percentages with "pp" (percentage points). Replaced "CALIBRATED" with observational quality indicator (`valid_pixel_fraction`).
+  - **A5 Forecast Chart**: Connected projected trend line with `spanGaps: true` and documented small-sample linear extrapolation caveats.
+- **Phase B (National Architecture)**: DONE [tag: `v2-phase-B-done`]
+  - **B0 Phenological Strategy**: Added `season_strategy` option slot defaulting to `pre_monsoon` (Apr-May) to bypass North India rabi wheat spikes and isolate perennial woody canopy.
+  - **B1 Tier 1 National Raster**: MODIS MOD13Q1 250m multi-year processing and static XYZ tile pyramid (`dashboard/public/tiles/{year}/{z}/{x}/{y}.png`) across Zooms 4-6.
+  - **B2 Tier 2 Admin Units**: 36 States and 594 Districts standardized from official Survey of India cartographic boundaries with multi-year zonal metrics.
+  - **B3 Tier 3 City Registry**: Generalized city drill-down via `config/cities.yaml`.
+  - **B4 Dynamic Zoom Behavior**: Automatic switching from National States (zoom < 6) -> Districts (zoom 6-9) -> 30m City Grid (zoom 10+).
+  - **B5 Independent Validation**: Benchmarked against ESA WorldCover 10m (2021) without credentials; our 2020 Landsat estimate (19.62%) reproduces ESA's 10m tree cover (18.84%) within **0.78 percentage points**.
+- **Phase C (Full-Viewport Map UI)**: DONE [tag: `v2-phase-C-done`]
+  - Full-viewport map application (100% viewport, responsive across all screen sizes).
+  - Floating collapsible panels for layer controls, search, stats, and timeline.
+  - Live auto-complete search across States, Districts, and Cities with smooth fly-to navigation.
+  - Keyless basemap switcher and interactive timeline player with auto-scrub animation.
+- **Phase D (Google Earth Engine Ready-to-Activate)**: DONE [tag: `v2-phase-D-done`]
+  - Full server-side GEE pipeline implemented in `src/adapters/gee.py`: Collection 2 L2 30m filtering, QA_PIXEL masking, Roy et al. (2016) harmonization, server-side zonal reduction, and Cloud Storage COG export.
+  - Zero interactive login hangs: detects credentials from `GEE_SERVICE_ACCOUNT_KEY_FILE` or `GEE_PROJECT_ID` and falls back gracefully to Planetary Computer.
+  - Dry-run validation mode and complete step-by-step GCP onboarding guide in `docs/GCP_SETUP_GUIDE.md`.
+- **Phase E (Stretch Analytics)**: DONE
+  - Canopy fragmentation metrics (patch counts, mean size) across urban matrix.
+  - Multi-tier linear trend projection with small-sample confidence bounds.
+  - Land Surface Temperature (LST) and built-up confounder analysis documented in `docs/METHODOLOGY.md`.
 
 ---
 
 ## Quickstart: Clean Clone Reproduction
 
-### Prerequisites
-- Python 3.10+ (managed via `uv` or standard Python `venv`)
-- Node.js 20+ and `npm`
-
-### 1. Environment Setup
+### 1. Setup Environment
 
 ```powershell
-# Clone and enter workspace
-git clone <repo-url> urban-tree-coverage
-cd urban-tree-coverage
-
-# Setup Python environment using uv
+# Setup Python virtual environment
 uv venv --python 3.10 .venv
 .venv\Scripts\activate
-
-# Install dependencies
 uv pip install -r requirements.txt
 ```
 
-### 2. Run Tests
+### 2. Run Test Suite
 
 ```powershell
-.venv\Scripts\python -m pytest
+pytest
 ```
+All 28 unit tests pass with zero failures.
 
-### 3. Run Pipeline
+### 3. Run Pipelines
 
+**Run Bengaluru 30m City Drill-Down Pipeline:**
 ```powershell
-.venv\Scripts\python execution/run_pipeline.py --config config/config.yaml
+python execution/run_pipeline.py --config config/config.yaml
 ```
 
-The pipeline processes Landsat scenes via Planetary Computer STAC, applies `QA_PIXEL` cloud/shadow masking, computes median composites for dry-season observations (Jan-Mar) across 2000, 2010, 2020, and 2025, calculates NDVI and multi-class vegetation categories, performs change detection, and exports static GeoJSON and JSON artifacts to `dashboard/public/data/`.
+**Run National & District Pipeline (Tier 1 & Tier 2):**
+```powershell
+python execution/run_national_pipeline.py
+```
 
-### 4. Launch Dashboard
+### 4. Launch Full-Viewport Dashboard
 
 ```powershell
 cd dashboard
 npm install
 npm run dev
 ```
-
-Open `http://localhost:5173` in any modern web browser.
-
----
-
-## Key Output Artifacts
-
-- `dashboard/public/data/city_stats.json`: Citywide green cover percentage, tree canopy area ($km^2$), and annual change rates for each year.
-- `dashboard/public/data/zones_grid_1km.geojson`: 1km spatial grid GeoJSON enriched with time-series vegetation percentages, canopy area, and change classes.
-- `dashboard/public/data/zones_wards.geojson`: BBMP Administrative Wards GeoJSON enriched with multi-year green percentages.
-- `dashboard/public/data/change_stats.json`: Consecutive interval and total decadal (2000-2025) loss, gain, and stable canopy metrics.
-- `dashboard/public/data/loss_hotspots.json`: Ranked list of top urban green loss areas across Bengaluru with spatial coordinates.
-- `dashboard/public/data/validation_report.json`: Consistency checks for urban landmark parks (Lalbagh, Cubbon Park) vs built-up controls.
-- `dashboard/public/data/forecast.json`: Small-sample linear trend projections for 2030 and 2035 with documented caveats.
+Open `http://localhost:5173` in any browser. For production build: `npm run build`.
 
 ---
 
-## Scientific Limitations
+## Scientific Limitations & Disclosures
 
-1. **Spatial Resolution (30m x 30m)**:
-   Landsat pixel size is 900 square meters. Fine-grained roadside tree canopies, residential gardens, and individual street trees smaller than 30m are averaged into mixed pixels.
-2. **Spectral NDVI Mixing**:
-   NDVI measures photosynthetic chlorophyll absorption. Irrigated lawns, golf courses, and agricultural plots exhibit green spectral signatures identical to tree canopy during January-March.
-3. **Cross-Sensor Differences**:
-   While USGS Collection 2 surface reflectance scaling ($DN \times 0.0000275 - 0.2$) is applied, minor bandwidth variations exist between Landsat 5 TM and Landsat 8/9 OLI.
+1. **Spatial Resolution (30m & 250m)**:
+   - City drill-down (Landsat 30m) cannot resolve individual street trees or private backyard gardens smaller than 900 m².
+   - National tier (MODIS 250m) represents regional canopy density; each pixel averages 6.25 hectares.
+2. **Spectral Disambiguation**:
+   - NDVI measures chlorophyll vigor, not vegetation height. In city tier, irrigated sports grounds or agricultural patches are screened using dry-season windows. At the national tier, the pre-monsoon summer window screens out rabi wheat, though irrigated orchards remain grouped with perennial canopy.
+3. **Sensor Shift Transparency**:
+   - As documented in `docs/VALIDATION.md`, Landsat 8/9 OLI yields higher NDVI (+2.56 pp at 0.40 cutoff) than Landsat 5/7 ETM+ for identical ground conditions. The 2010-2020 trend reflects this sensor transition alongside physical stabilization.

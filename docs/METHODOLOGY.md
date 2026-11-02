@@ -141,3 +141,26 @@ The automated validation suite tests consistency at known geographic anchors:
 - **Dense Canopy Anchors**: Lalbagh Botanical Garden (`[77.5847, 12.9507]`), Cubbon Park (`[77.5929, 12.9763]`). Verified $NDVI \ge 0.35$.
 - **High Built-Up Anchors**: Peenya Industrial Area (`[77.5186, 13.0285]`), ITPL Whitefield (`[77.7471, 12.9863]`). Verified $NDVI < 0.35$.
 - **Systematic Sampling**: 50 random coordinate probes sampled across the study bounding box to audit cross-decadal radiometric stability.
+
+---
+
+## 11. National Tier Architecture & Perennial Green Proxy
+
+### The Phenological Confounder in North India
+In temperate and subtropical North India (Indo-Gangetic Basin: Punjab, Haryana, UP, Bihar, MP), winter wheat and mustard crops (the *Rabi* cycle) are actively growing between January and March. A standard winter NDVI measurement yields false-positive green values ($NDVI > 0.60$) over agricultural fields, misleadingly suggesting tree canopy.
+
+### Pre-Monsoon Dry Window Solution
+To measure true woody perennial tree and shrub canopy at the national scale, the Tier 1 pipeline uses MODIS MOD13Q1 (250m, 16-day) during the **Pre-Monsoon Summer window (April 15 to May 31)**. During this period:
+- Rabi agricultural crops have been harvested, leaving fields dry and fallow ($NDVI < 0.20$).
+- Deciduous and evergreen forests, agro-forestry, orchards, and urban green cover maintain physiological activity ($NDVI \ge 0.35$).
+- This metric is designated as **Perennial Green Cover (Proxy)** to maintain strict scientific transparency.
+
+---
+
+## 12. Land Surface Temperature (LST) & Built-up Confounder Analysis
+
+When evaluating the relationship between urban vegetation and thermal dynamics:
+- **Surface Urban Heat Island (SUHI)**: Impervious surfaces (concrete, asphalt, metal roofing) have high thermal inertia and low evaporative cooling, yielding elevated Land Surface Temperatures (LST).
+- **Thermal-Vegetation Correlation**: High NDVI strongly correlates negatively with LST due to canopy shading and latent heat flux through transpiration.
+- **Built-Up Confounder**: The Normalized Difference Built-Up Index ($NDBI = \frac{SWIR1 - NIR}{SWIR1 + NIR}$) strongly mirrors the inverse of NDVI. In dense urban corridors, high LST is co-determined by low canopy cover AND high impervious surface fraction; attributing cooling solely to tree presence without controlling for impervious surface density creates an omitted-variable bias.
+
