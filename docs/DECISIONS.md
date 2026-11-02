@@ -84,3 +84,49 @@ Records decisions, design trade-offs, and runtime adjustments.
 - **Why**: Deepens analytical value for urban planners by providing both structural fragmentation metrics (patch counts, mean size) and future trajectory bounds.
 - **What would change your mind**: Misleading forecasting interpretations by end users.
 - **Config Key Involved**: `forecast: "linear_trend"`.
+
+## ADR-009: Basemap Option Slot & Watermark Elimination (Phase A1)
+- **Date/Time**: 2026-11-02 02:30 UTC
+- **Decision**: Introduce modular `basemap` option slot defaulting to keyless OpenStreetMap Standard (`osm_standard`), Esri World Imagery (`esri_satellite`), and OpenFreeMap Positron (`openfreemap_positron`). CARTO Dark Matter requires `CARTO_API_KEY` via env var and falls back cleanly to keyless default if absent.
+- **Options Considered**:
+  1. Continue using anonymous CARTO tiles (results in unacceptable "API KEY REQUIRED" watermark).
+  2. Hardcode OSM standard tiles without configuration.
+  3. Pluggable basemap adapter with keyless defaults and keyed provider env injection.
+- **Why**: Strict policy against shipping watermarked or non-functional basemap tiles.
+- **Config Key Involved**: `basemap.active: "osm_standard"`.
+
+## ADR-010: Equal-Area Zonal Mathematics & Area Invariant (Phase A2)
+- **Date/Time**: 2026-11-02 02:40 UTC
+- **Decision**: Enforce physical polygon area calculation in equal-area / projected CRS (`EPSG:6933` / UTM `EPSG:32643`) and guarantee the fundamental invariant `cell green_km2 == green_fraction * cell_area`.
+- **Options Considered**:
+  1. Rely on rasterized pixel counts multiplied by nominal 30m cell resolution (broke on boundary cells where only fractional area intersected the analysis window, producing 0.097 km2 for a 65% green 1 km2 cell).
+  2. Calculate true polygon area in projected CRS and compute green area as fraction of true polygon area.
+- **Why**: Eliminates edge truncation artifacts and restores physical mathematical consistency across all zones.
+- **Config Key Involved**: `src/core/area.py: compute_zonal_metrics`.
+
+## ADR-011: Cross-Sensor Comparability & Threshold Sensitivity (Phase A3)
+- **Date/Time**: 2026-11-02 02:50 UTC
+- **Decision**: Audit coincident dry-season 2020 pixels (1,224,612 pixels) between Landsat 7 ETM+ and Landsat 8 OLI over Bengaluru. Document that OLI has a +0.0160 mean NDVI positive bias (+2.56 pp at 0.40 threshold), which explains the bulk of the 2010-2020 apparent gain (+3.17 pp). Document that 2020-2025 gain is driven by late 2024 antecedent precipitation and peri-urban plantation expansion.
+- **Options Considered**:
+  1. Artificially tune 2020/2025 numbers to match preconceptions of decline.
+  2. Report empirical facts honestly in `docs/VALIDATION.md`, update UI with transparent data-quality indicators, and note sensor differences.
+- **Why**: Non-negotiable commitment to empirical honesty and scientific reproducibility.
+- **Config Key Involved**: `sensors: "landsat_c2"`.
+
+## ADR-012: Pre-Monsoon Season Strategy for National Tier Perennial Proxy (Phase B0)
+- **Date/Time**: 2026-11-02 03:00 UTC
+- **Decision**: Set default national-tier observation window to Pre-Monsoon summer (April 15 - May 31).
+- **Options Considered**:
+  1. Fixed Jan-Mar across entire India: invalid in North India where winter wheat (rabi crop) produces high false-positive NDVI spikes.
+  2. Pre-monsoon summer (Apr-May): dry fallow fields minimize agricultural crop signals, isolating true perennial woody tree and shrub canopy.
+- **Why**: Essential for national scientific validity; labeled explicitly in UI as "Perennial green cover (proxy)".
+- **Config Key Involved**: `season_strategy.national_default: "pre_monsoon"`.
+
+## ADR-013: Official Survey of India Boundary Standard (Phase B2)
+- **Date/Time**: 2026-11-02 03:10 UTC
+- **Decision**: Standardize on official Survey of India boundary depiction sourced from DataMeet open geospatial archives for State (36) and District (594) administrative boundaries, ensuring constitutional accuracy for Jammu & Kashmir, Ladakh, and Arunachal Pradesh.
+- **Options Considered**:
+  1. Natural Earth / GADM: clips or misrepresents Indian sovereign boundaries, violating statutory cartographic rules.
+  2. Survey of India official boundaries via DataMeet: accurate, legally compliant, and open.
+- **Why**: Compliance with Indian cartographic laws and respectful sovereign depiction.
+- **Config Key Involved**: `boundary_source.active: "survey_of_india"`.

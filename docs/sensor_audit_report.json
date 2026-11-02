@@ -1,0 +1,81 @@
+{
+  "coincident_pixels": 1224612,
+  "mean_l7_ndvi": 0.2868,
+  "mean_l8_raw_ndvi": 0.3028,
+  "mean_l8_harm_ndvi": 0.3422,
+  "raw_bias": 0.016,
+  "harm_bias": 0.0554,
+  "correlation": 0.911,
+  "threshold_comparison": [
+    {
+      "threshold": 0.3,
+      "l7_pct": 39.9,
+      "l8_raw_pct": 43.54,
+      "l8_harm_pct": 56.49,
+      "raw_diff_pp": 3.64,
+      "harm_diff_pp": 16.59
+    },
+    {
+      "threshold": 0.35,
+      "l7_pct": 27.34,
+      "l8_raw_pct": 30.31,
+      "l8_harm_pct": 40.42,
+      "raw_diff_pp": 2.97,
+      "harm_diff_pp": 13.08
+    },
+    {
+      "threshold": 0.4,
+      "l7_pct": 18.01,
+      "l8_raw_pct": 20.57,
+      "l8_harm_pct": 27.84,
+      "raw_diff_pp": 2.56,
+      "harm_diff_pp": 9.83
+    },
+    {
+      "threshold": 0.45,
+      "l7_pct": 11.32,
+      "l8_raw_pct": 13.82,
+      "l8_harm_pct": 18.48,
+      "raw_diff_pp": 2.5,
+      "harm_diff_pp": 7.16
+    },
+    {
+      "threshold": 0.5,
+      "l7_pct": 6.9,
+      "l8_raw_pct": 9.35,
+      "l8_harm_pct": 12.12,
+      "raw_diff_pp": 2.45,
+      "harm_diff_pp": 5.22
+    }
+  ],
+  "multi_year_sensitivity": {
+    "2000": {
+      "th_0.30": 55.09,
+      "th_0.35": 37.99,
+      "th_0.40": 24.8,
+      "th_0.45": 15.48,
+      "th_0.50": 9.37
+    },
+    "2010": {
+      "th_0.30": 42.31,
+      "th_0.35": 27.39,
+      "th_0.40": 16.45,
+      "th_0.45": 9.53,
+      "th_0.50": 5.46
+    },
+    "2020": {
+      "th_0.30": 41.54,
+      "th_0.35": 29.13,
+      "th_0.40": 19.62,
+      "th_0.45": 12.56,
+      "th_0.50": 7.73
+    },
+    "2025": {
+      "th_0.30": 49.59,
+      "th_0.35": 38.43,
+      "th_0.40": 28.68,
+      "th_0.45": 20.5,
+      "th_0.50": 13.7
+    }
+  }
+}
