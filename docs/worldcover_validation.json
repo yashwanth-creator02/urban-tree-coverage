@@ -1,0 +1,14 @@
+{
+  "dataset": "ESA WorldCover 10m v200 (2021)",
+  "reference_year": 2021,
+  "total_pixels_10m": 12945600,
+  "esa_tree_pct": 18.84,
+  "esa_tree_shrub_pct": 28.32,
+  "esa_built_pct": 46.94,
+  "esa_crop_pct": 18.52,
+  "esa_water_pct": 0.96,
+  "landsat_2020_pct": 19.62,
+  "landsat_2025_pct": 28.68,
+  "bias_vs_tree_pp": 0.78,
+  "bias_vs_tree_shrub_pp": -8.7
+}

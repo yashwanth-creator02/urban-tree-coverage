@@ -1,0 +1,156 @@
+{
+  "cities": {
+    "bengaluru": {
+      "id": "bengaluru",
+      "name": "Bengaluru",
+      "state": "Karnataka",
+      "status": "processed",
+      "center": [
+        77.5946,
+        12.9716
+      ],
+      "bbox": [
+        77.46,
+        12.83,
+        77.75,
+        13.14
+      ],
+      "epsg_utm": 32643,
+      "grid_size_m": 1000,
+      "description": "Primary baseline metropolitan region; complete multi-decadal 30m Landsat analysis (2000-2025)."
+    },
+    "delhi": {
+      "id": "delhi",
+      "name": "Delhi (NCT)",
+      "state": "Delhi",
+      "status": "pending",
+      "center": [
+        77.209,
+        28.6139
+      ],
+      "bbox": [
+        76.84,
+        28.4,
+        77.35,
+        28.88
+      ],
+      "epsg_utm": 32643,
+      "grid_size_m": 1000,
+      "description": "National Capital Territory; 30 m detail pending processing."
+    },
+    "mumbai": {
+      "id": "mumbai",
+      "name": "Mumbai",
+      "state": "Maharashtra",
+      "status": "pending",
+      "center": [
+        72.8777,
+        19.076
+      ],
+      "bbox": [
+        72.77,
+        18.89,
+        73.01,
+        19.28
+      ],
+      "epsg_utm": 32643,
+      "grid_size_m": 1000,
+      "description": "Greater Mumbai metropolitan region; 30 m detail pending processing."
+    },
+    "chennai": {
+      "id": "chennai",
+      "name": "Chennai",
+      "state": "Tamil Nadu",
+      "status": "pending",
+      "center": [
+        80.2707,
+        13.0827
+      ],
+      "bbox": [
+        80.12,
+        12.92,
+        80.34,
+        13.24
+      ],
+      "epsg_utm": 32644,
+      "grid_size_m": 1000,
+      "description": "Chennai urban agglomeration; 30 m detail pending processing."
+    },
+    "hyderabad": {
+      "id": "hyderabad",
+      "name": "Hyderabad",
+      "state": "Telangana",
+      "status": "pending",
+      "center": [
+        78.4867,
+        17.385
+      ],
+      "bbox": [
+        78.3,
+        17.25,
+        78.65,
+        17.55
+      ],
+      "epsg_utm": 32644,
+      "grid_size_m": 1000,
+      "description": "Hyderabad metropolitan area; 30 m detail pending processing."
+    },
+    "kolkata": {
+      "id": "kolkata",
+      "name": "Kolkata",
+      "state": "West Bengal",
+      "status": "pending",
+      "center": [
+        88.3639,
+        22.5726
+      ],
+      "bbox": [
+        88.25,
+        22.45,
+        88.48,
+        22.7
+      ],
+      "epsg_utm": 32645,
+      "grid_size_m": 1000,
+      "description": "Kolkata municipal area; 30 m detail pending processing."
+    },
+    "pune": {
+      "id": "pune",
+      "name": "Pune",
+      "state": "Maharashtra",
+      "status": "pending",
+      "center": [
+        73.8567,
+        18.5204
+      ],
+      "bbox": [
+        73.72,
+        18.42,
+        73.99,
+        18.63
+      ],
+      "epsg_utm": 32643,
+      "grid_size_m": 1000,
+      "description": "Pune urban core; 30 m detail pending processing."
+    },
+    "ahmedabad": {
+      "id": "ahmedabad",
+      "name": "Ahmedabad",
+      "state": "Gujarat",
+      "status": "pending",
+      "center": [
+        72.5714,
+        23.0225
+      ],
+      "bbox": [
+        72.45,
+        22.92,
+        72.7,
+        23.15
+      ],
+      "epsg_utm": 32643,
+      "grid_size_m": 1000,
+      "description": "Ahmedabad municipal corporation area; 30 m detail pending processing."
+    }
+  }
+}

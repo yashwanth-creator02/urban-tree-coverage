@@ -1,0 +1,29 @@
+{
+  "title": "India National Perennial Green Cover (2000-2025)",
+  "sensor": "MODIS (MOD13Q1 250m) via Microsoft Planetary Computer",
+  "season_window": "Pre-Monsoon Summer (April 15 - May 31)",
+  "metric_label": "Perennial green cover (proxy)",
+  "total_geographic_area_km2": 3152345.8,
+  "data": {
+    "2000": {
+      "green_km2": 721219.1,
+      "green_percentage": 22.88
+    },
+    "2010": {
+      "green_km2": 677951.2,
+      "green_percentage": 21.51
+    },
+    "2020": {
+      "green_km2": 699590.1,
+      "green_percentage": 22.19
+    },
+    "2025": {
+      "green_km2": 742848.0,
+      "green_percentage": 23.56
+    }
+  },
+  "net_change_2000_2025": {
+    "delta_pp": 0.69,
+    "delta_km2": 21628.9
+  }
+}
