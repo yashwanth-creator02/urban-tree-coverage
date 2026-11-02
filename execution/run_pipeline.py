@@ -25,7 +25,14 @@ from shapely.geometry import Point
 
 from src.adapters import get_data_source_adapter, get_storage_adapter, get_zone_adapter
 from src.config import load_config
-from src.core.area import calculate_green_area_km2, calculate_green_percentage, calculate_tier_breakdown, pixel_area_km2
+from src.core.area import (
+    calculate_green_area_km2,
+    calculate_green_percentage,
+    calculate_tier_breakdown,
+    compute_polygon_area_km2,
+    compute_zonal_metrics,
+    pixel_area_km2,
+)
 from src.core.change import classify_change, summarize_change
 from src.core.forecast import forecast_linear_trend
 from src.core.indices import calculate_evi, calculate_msavi, calculate_ndvi, calculate_savi
@@ -243,9 +250,15 @@ def run_pipeline(config_path: str = "config/config.yaml") -> None:
     def aggregate_layer(gdf_target: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         gdf_u = gdf_target.to_crs(ref_crs)
         y1, y2 = baseline_pair
+        # Compute true physical polygon area in projected CRS (km2)
+        target_areas_km2 = compute_polygon_area_km2(gdf_u)
+        gdf_target["area_km2"] = np.round(target_areas_km2, 4)
+
         for idx_row, row in gdf_u.iterrows():
             zid = row["zone_id"]
             geom = row["geometry"]
+            cell_area = float(target_areas_km2[idx_row])
+
             zone_mask = features.rasterize(
                 [(geom, 1)],
                 out_shape=ref_shape,
@@ -261,24 +274,31 @@ def run_pipeline(config_path: str = "config/config.yaml") -> None:
             for yr in years:
                 z_green = green_masks[yr] & zone_mask
                 z_green_count = np.count_nonzero(z_green)
-                z_pct = round((z_green_count / z_px) * 100.0, 2)
-                z_area = round(z_green_count * pixel_area_km2(pixel_size_m), 3)
+                frac, z_pct, z_area = compute_zonal_metrics(z_green_count, z_px, cell_area)
                 gdf_target.loc[gdf_target["zone_id"] == zid, f"green_pct_{yr}"] = z_pct
                 gdf_target.loc[gdf_target["zone_id"] == zid, f"green_km2_{yr}"] = z_area
 
+            # Data-quality indicator: valid pixel count and coverage fraction
+            expected_px = int((cell_area * 1e6) / (pixel_size_m * pixel_size_m))
+            valid_frac = round(min(1.0, z_px / expected_px), 3) if expected_px > 0 else 1.0
+            gdf_target.loc[gdf_target["zone_id"] == zid, "valid_pixel_fraction"] = valid_frac
+
             z_loss = np.count_nonzero((baseline_chg_grid == -1) & zone_mask)
             z_gain = np.count_nonzero((baseline_chg_grid == 1) & zone_mask)
-            z_loss_km2 = round(z_loss * pixel_area_km2(pixel_size_m), 3)
-            z_gain_km2 = round(z_gain * pixel_area_km2(pixel_size_m), 3)
-            z_net_km2 = round(z_gain_km2 - z_loss_km2, 3)
+            z_loss_frac = z_loss / z_px
+            z_gain_frac = z_gain / z_px
+            z_loss_km2 = round(z_loss_frac * cell_area, 4)
+            z_gain_km2 = round(z_gain_frac * cell_area, 4)
+            z_net_km2 = round(z_gain_km2 - z_loss_km2, 4)
 
             vals_y1 = gdf_target.loc[gdf_target["zone_id"] == zid, f"green_pct_{y1}"].values
             vals_y2 = gdf_target.loc[gdf_target["zone_id"] == zid, f"green_pct_{y2}"].values
             pct_y1 = vals_y1[0] if len(vals_y1) > 0 and not np.isnan(vals_y1[0]) else 0.0
             pct_y2 = vals_y2[0] if len(vals_y2) > 0 and not np.isnan(vals_y2[0]) else 0.0
-            pct_delta = round(pct_y2 - pct_y1, 2)
+            pct_delta_pp = round(pct_y2 - pct_y1, 2)
 
-            gdf_target.loc[gdf_target["zone_id"] == zid, "net_change_pct"] = pct_delta
+            gdf_target.loc[gdf_target["zone_id"] == zid, "net_change_pp"] = pct_delta_pp
+            gdf_target.loc[gdf_target["zone_id"] == zid, "net_change_pct"] = pct_delta_pp  # backwards compatibility
             gdf_target.loc[gdf_target["zone_id"] == zid, "loss_km2"] = z_loss_km2
             gdf_target.loc[gdf_target["zone_id"] == zid, "gain_km2"] = z_gain_km2
             gdf_target.loc[gdf_target["zone_id"] == zid, "net_change_km2"] = z_net_km2

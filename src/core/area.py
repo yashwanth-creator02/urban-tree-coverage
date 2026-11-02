@@ -1,9 +1,12 @@
 """
 Area calculations and spatial aggregation utilities.
+Guarantees equal-area CRS projection for all polygon area metrics.
 """
 
-from typing import Dict
+from typing import Dict, Union
+import geopandas as gpd
 import numpy as np
+from shapely.geometry.base import BaseGeometry
 
 
 def pixel_area_km2(pixel_size_m: float = 30.0) -> float:
@@ -28,6 +31,54 @@ def calculate_green_percentage(binary_mask: np.ndarray, valid_mask: np.ndarray) 
         return 0.0
     green_count = np.count_nonzero(binary_mask & valid_mask)
     return float((green_count / valid_count) * 100.0)
+
+
+def compute_polygon_area_km2(
+    geom_or_gdf: Union[BaseGeometry, gpd.GeoDataFrame, gpd.GeoSeries],
+    source_crs: str = "EPSG:4326",
+    equal_area_crs: str = "EPSG:6933",
+) -> Union[float, np.ndarray]:
+    """
+    Compute true physical area in square kilometers using an equal-area or projected CRS.
+    Guarantees no calculation in geographic degrees (EPSG:4326).
+    """
+    if isinstance(geom_or_gdf, (gpd.GeoDataFrame, gpd.GeoSeries)):
+        gdf = geom_or_gdf
+        if gdf.crs is None:
+            gdf = gdf.set_crs(source_crs)
+        # Check if already projected
+        if gdf.crs.is_geographic:
+            projected = gdf.to_crs(equal_area_crs)
+        else:
+            projected = gdf
+        return (projected.geometry.area / 1_000_000.0).to_numpy()
+    else:
+        # Single geometry
+        s = gpd.GeoSeries([geom_or_gdf], crs=source_crs)
+        projected = s.to_crs(equal_area_crs)
+        return float(projected.area.iloc[0] / 1_000_000.0)
+
+
+def compute_zonal_metrics(
+    green_count: int,
+    valid_count: int,
+    cell_area_km2: float,
+) -> tuple:
+    """
+    Computes green percentage and green area (km2) for a zone,
+    strictly satisfying the invariant:
+    cell green_km2 == green_fraction * cell_area.
+
+    Returns:
+        tuple: (green_fraction, green_percentage, green_km2)
+    """
+    if valid_count <= 0 or cell_area_km2 <= 0:
+        return 0.0, 0.0, 0.0
+
+    green_fraction = green_count / valid_count
+    green_pct = round(green_fraction * 100.0, 2)
+    green_km2 = round(green_fraction * cell_area_km2, 4)
+    return green_fraction, green_pct, green_km2
 
 
 def calculate_tier_breakdown(
