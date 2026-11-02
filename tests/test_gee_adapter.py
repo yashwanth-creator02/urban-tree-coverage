@@ -27,8 +27,13 @@ def test_gee_adapter_dry_run_validation():
     assert "Roy et al. (2016)" in res["queries"][3]["harmonization"]
 
 
-def test_gee_adapter_graceful_credential_fallback():
+def test_gee_adapter_graceful_credential_fallback(monkeypatch):
+    monkeypatch.delenv("GEE_SERVICE_ACCOUNT_KEY_FILE", raising=False)
+    monkeypatch.delenv("GEE_SERVICE_ACCOUNT_EMAIL", raising=False)
+    monkeypatch.delenv("GEE_PROJECT_ID", raising=False)
+
     adapter = GoogleEarthEngineAdapter()
+    monkeypatch.setattr(adapter, "has_credentials", lambda: False)
     # Without env vars, initialize_client returns False
     assert adapter.initialize_client(silent=True) is False
 
@@ -39,3 +44,10 @@ def test_gee_adapter_graceful_credential_fallback():
     err_msg = str(exc_info.value).lower()
     assert "credentials" in err_msg
     assert "credentials_needed.md" in err_msg
+
+
+def test_gee_adapter_live_auth_when_credentials_present():
+    adapter = GoogleEarthEngineAdapter()
+    if adapter.has_credentials():
+        assert adapter.initialize_client(silent=True) is True
+

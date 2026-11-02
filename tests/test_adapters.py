@@ -47,8 +47,13 @@ def test_factory_returns_configured_defaults():
     assert isinstance(sa, LocalStorageAdapter)
 
 
-def test_gee_adapter_fails_gracefully_without_credentials():
+def test_gee_adapter_fails_gracefully_without_credentials(monkeypatch):
+    monkeypatch.delenv("GEE_SERVICE_ACCOUNT_KEY_FILE", raising=False)
+    monkeypatch.delenv("GEE_SERVICE_ACCOUNT_EMAIL", raising=False)
+    monkeypatch.delenv("GEE_PROJECT_ID", raising=False)
+
     adapter = GoogleEarthEngineAdapter()
+    monkeypatch.setattr(adapter, "has_credentials", lambda: False)
     assert isinstance(adapter, DataSourceAdapter)
     assert adapter.name == "gee"
 

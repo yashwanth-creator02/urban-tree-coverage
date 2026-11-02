@@ -28,16 +28,43 @@ class GoogleEarthEngineAdapter(DataSourceAdapter):
         self.config = config or {}
         self._initialized = False
         self._ee = None
+        if self.config.get("load_env", True):
+            self._load_env()
 
     @property
     def name(self) -> str:
         return "gee"
 
+    def _load_env(self) -> None:
+        """Loads .env file into os.environ if present."""
+        if not self.config.get("load_env", True):
+            return
+        env_path = Path(".env")
+        if env_path.exists():
+            try:
+                with open(env_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith("#"):
+                            continue
+                        if "=" in line:
+                            k, v = line.split("=", 1)
+                            k = k.strip()
+                            v = v.strip().strip("'\"")
+                            if k not in os.environ or not os.environ[k]:
+                                os.environ[k] = v
+            except Exception:
+                pass
+
     def has_credentials(self) -> bool:
         """
         Checks if valid GEE credentials exist in the environment without hanging.
         """
+        if self.config.get("load_env", True):
+            self._load_env()
         key_file = os.getenv("GEE_SERVICE_ACCOUNT_KEY_FILE")
+        if key_file:
+            key_file = os.path.expanduser(key_file.strip("'\""))
         project_id = os.getenv("GEE_PROJECT_ID")
         if key_file and os.path.exists(key_file):
             return True
@@ -53,6 +80,11 @@ class GoogleEarthEngineAdapter(DataSourceAdapter):
         if self._initialized and self._ee is not None:
             return True
 
+        if not self.has_credentials():
+            if not silent:
+                print("[GEE Adapter] No Google Earth Engine credentials found in environment.")
+            return False
+
         try:
             import ee
             self._ee = ee
@@ -67,29 +99,41 @@ class GoogleEarthEngineAdapter(DataSourceAdapter):
             return False
 
         key_file = os.getenv("GEE_SERVICE_ACCOUNT_KEY_FILE")
+        if key_file:
+            key_file = os.path.expanduser(key_file.strip("'\""))
         sa_email = os.getenv("GEE_SERVICE_ACCOUNT_EMAIL")
+        if sa_email:
+            sa_email = sa_email.strip("'\"")
         project_id = os.getenv("GEE_PROJECT_ID")
+        if project_id:
+            project_id = project_id.strip("'\"")
 
         # 1. Service account key file authentication
         if key_file and os.path.exists(key_file):
             try:
-                # Read service account email from key file if not explicitly provided
-                if not sa_email:
-                    try:
-                        with open(key_file, "r") as f:
-                            sa_data = json.load(f)
-                            sa_email = sa_data.get("client_email")
-                    except Exception:
-                        pass
+                # Prefer service account email from key file if present
+                try:
+                    with open(key_file, "r") as f:
+                        sa_data = json.load(f)
+                        if "client_email" in sa_data:
+                            sa_email = sa_data["client_email"]
+                except Exception:
+                    pass
 
                 credentials = ee.ServiceAccountCredentials(sa_email, key_file)
-                ee.Initialize(credentials, project=project_id)
+
+                try:
+                    ee.Initialize(credentials, project=project_id)
+                except Exception as proj_err:
+                    # If project override lacks serviceusage consumer role, fall back to credentials default project
+                    ee.Initialize(credentials)
+
                 self._initialized = True
-                print(f"[GEE Adapter] Successfully authenticated using Service Account: {sa_email}")
+                print(f"[GEE Adapter] Successfully authenticated with GEE Service Account: {sa_email}")
                 return True
             except Exception as e:
                 print(f"[GEE Adapter] Service account authentication failed: {e}")
-                return False
+                # Fall through to test project_id directly if possible
 
         # 2. Application Default Credentials or GCP Project ID
         if project_id:

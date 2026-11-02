@@ -21,6 +21,7 @@ Comprehensive registry of tracked project files, architecture roles, and operati
 | `execution/prepare_boundaries.py` | Layer 3: Execution | Utility downloading and standardizing official Survey of India administrative boundaries. |
 | `execution/audit_cross_sensor.py` | Layer 3: Execution | Empirical sensor comparability auditor for Landsat 7 (ETM+) vs Landsat 8 (OLI). |
 | `execution/validate_worldcover.py` | Layer 3: Execution | Independent reference validator comparing canopy classifications against ESA WorldCover 10m. |
+| `execution/verify_gee_live.py` | Layer 3: Execution | Live verification runner auditing Earth Engine authentication, querying, and server-side zonal stats. |
 | `src/__init__.py` | Core Package | Python package entrypoint. |
 | `src/config.py` | Core Package | YAML configuration loader and schema validator. |
 | `src/adapters/__init__.py` | Adapters | Factory functions for selecting data source, zone, and storage adapters. |
