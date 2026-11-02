@@ -162,4 +162,47 @@ The Urban Green-Cover Intelligence System is designed around modular adapters. E
 
 ## 13. Area of Interest (`area_of_interest`)
 - **Default**: Bengaluru Metropolitan Region Bounding Box `[77.46, 12.83, 77.75, 13.14]` (min_lon, min_lat, max_lon, max_lat).
+- **Alternatives**: Any custom bounding box or polygon GeoJSON across India.
+
+---
+
+## 14. Basemap Provider (`basemap`)
+- **Default**: `osm_standard` (Keyless, OpenStreetMap Standard light tiles)
+- **Alternatives**:
+  - `esri_satellite`: Keyless high-resolution satellite imagery from Esri World Imagery.
+  - `openfreemap_positron`: Keyless clean vector/raster style hosted by OpenFreeMap.
+  - `carto_dark_keyed`: CARTO Dark Matter requiring `CARTO_API_KEY` in `.env` to prevent watermarking.
+- **Switching Instructions**:
+  Set `basemap.active: esri_satellite` or `basemap.active: openfreemap_positron` in `config/config.yaml`.
+  If using CARTO, add `CARTO_API_KEY=your_key` to `.env` and set `basemap.active: carto_dark_keyed`.
+  The system automatically falls back to `osm_standard` if a keyed provider lacks credentials, guaranteeing that no watermarked tiles ever ship.
+
+---
+
+## 15. Season Strategy (`season_strategy`)
+- **Default**: `pre_monsoon` (National Tier, Months 4-5) | `fixed_window` (City Tier, Months 1-3)
+- **Alternatives**: `annual_percentile` | `per_region`
+- **Specification**:
+  - `pre_monsoon`: Uses April 15 - May 31 window. Critical for the national tier across North India: dry-season fallow conditions eliminate wheat/mustard rabi crop signatures and isolate true perennial woody tree and shrub canopy.
+  - `fixed_window`: Uses specific calendar months (e.g., January - March for South India cities where rabi wheat is absent).
+  - `annual_percentile`: Computes low annual percentile (e.g., 15th percentile) of 16-day composites across the calendar year.
+
+---
+
+## 16. Administrative Boundary Source (`boundary_source`)
+- **Default**: `survey_of_india` (Official Survey of India boundaries via DataMeet community archive)
+- **Alternatives**: `geoboundaries` | `gadm`
+- **Specification**:
+  - `survey_of_india`: Preserves official constitutional depiction of India's external borders, including Jammu & Kashmir, Ladakh, and Arunachal Pradesh.
+  - `geoboundaries`: International open boundary dataset.
+- **Note on Sovereignty**:
+  Depiction of Indian external boundaries must strictly conform to official Survey of India cartographic standards.
+
+---
+
+## 17. Compute Safety Caps (`compute_safety`)
+- **Default**: `max_download_gb: 10.0`, `max_runtime_hours: 2.0`, `chunk_size_km: 100`
+- **Specification**:
+  Guarantees all batch processing, national compositing, and raster downloads are bounded, resumable, and partitioned into tiles. Never loads full national rasters into RAM simultaneously.
+
 - **Alternatives**: Any bounding box array or path to custom boundary GeoJSON.

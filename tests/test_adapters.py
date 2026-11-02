@@ -57,3 +57,24 @@ def test_gee_adapter_fails_gracefully_without_credentials():
         adapter.fetch_composite(2020, [77.46, 12.83, 77.75, 13.14], [1, 2, 3])
 
     assert "credentials" in str(exc_info.value).lower()
+
+
+def test_basemap_adapter_keyless_and_fallback():
+    from src.adapters.basemap import BasemapAdapter
+
+    cfg = {
+        "active": "osm_standard",
+        "providers": {
+            "osm_standard": {"name": "OSM", "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png"},
+            "carto_dark_keyed": {"name": "CARTO", "url": "https://carto.com/{key}", "env_key": "NON_EXISTENT_KEY"},
+        },
+    }
+    adapter = BasemapAdapter(cfg)
+    # Default is keyless OSM
+    prov = adapter.get_provider()
+    assert prov["name"] == "OSM"
+
+    # Requesting keyed provider without env key falls back safely to OSM
+    prov_keyed = adapter.get_provider("carto_dark_keyed")
+    assert prov_keyed["name"] == "OSM"
+

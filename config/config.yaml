@@ -72,16 +72,64 @@ storage:
 dashboard:
   type: "static_vite"
   port: 5173
-  title: "Bengaluru Urban Green Cover Intelligence (2000-2025)"
+  title: "India Urban & National Green Cover Intelligence (2000-2025)"
 
-# Slot 12: Forecast Projection
+# Slot 12: Basemap Provider
+# Options: osm_standard | esri_satellite | openfreemap_positron | carto_dark_keyed
+basemap:
+  active: "osm_standard"
+  providers:
+    osm_standard:
+      name: "OpenStreetMap Standard (Light)"
+      url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+      attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
+      max_zoom: 19
+    esri_satellite:
+      name: "Esri World Imagery (Satellite)"
+      url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+      attribution: "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and GIS User Community"
+      max_zoom: 18
+    openfreemap_positron:
+      name: "OpenFreeMap Positron (Keyless Clean)"
+      url: "https://tiles.openfreemap.org/styles/positron"
+      attribution: "&copy; <a href='https://openfreemap.org'>OpenFreeMap</a> &copy; OpenStreetMap contributors"
+      max_zoom: 18
+    carto_dark_keyed:
+      name: "CARTO Dark Matter (Keyed)"
+      url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?api_key={key}"
+      env_key: "CARTO_API_KEY"
+      attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
+      max_zoom: 19
+
+# Slot 13: Season Strategy (National vs City Tier)
+# Options: pre_monsoon (Apr-May, isolates perennial canopy from rabi wheat) | fixed_window | annual_percentile | per_region
+season_strategy:
+  national_default: "pre_monsoon"
+  pre_monsoon_months: [4, 5]
+  city_default: "fixed_window"
+  city_months: [1, 2, 3]
+
+# Slot 14: Administrative Boundary Source
+# Options: survey_of_india | geoboundaries
+boundary_source:
+  active: "survey_of_india"
+  states_path: "data/boundaries/india_states.geojson"
+  districts_path: "data/boundaries/india_districts.geojson"
+
+# Slot 15: Compute Safety Caps
+compute_safety:
+  max_download_gb: 10.0
+  max_runtime_hours: 2.0
+  chunk_size_km: 100
+
+# Slot 16: Forecast Projection
 # Options: linear_trend | arima | prophet | off
 forecast:
   method: "linear_trend"
   target_years: [2030, 2035]
   disclaimer: "Linear projection based on 4 decadal intervals; subject to small-sample assumptions."
 
-# Slot 13: Area of Interest (AOI)
+# Slot 17: Area of Interest (AOI) - Bengaluru Primary City Baseline
 # Format: [min_lon, min_lat, max_lon, max_lat] in EPSG:4326
 area_of_interest:
   bbox: [77.46, 12.83, 77.75, 13.14]
