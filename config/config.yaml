@@ -144,3 +144,10 @@ area_of_interest:
     cubbon_park: [77.5925, 12.9763]
     peenya_industrial: [77.5140, 13.0290]
     whitefield_itpl: [77.7472, 12.9863]
+
+# Slot 18: Snapshot Window Strategy
+# Options: median_3yr (default: 3-year temporal median window around target year) | single_year
+snapshot_window:
+  strategy: "median_3yr"
+  half_window_years: 1
+  rationale: "Mitigates acute precipitation shocks and drought noise (such as 2010 meteorological drought) by computing 3-year running median composites."

@@ -53,6 +53,10 @@ Comprehensive registry of tracked project files, architecture roles, and operati
 | `tests/test_indices.py` | Verification | Mathematical correctness tests for NDVI, EVI, SAVI, MSAVI. |
 | `tests/test_provenance.py` | Verification | Mandatory provenance manifest verification and anti-fabrication test suite. |
 | `tests/test_thresholding.py` | Verification | Multi-tier classification and Otsu threshold unit tests. |
+| `tests/test_ui_contract.py` | Verification | Contract tests verifying hotspots schema, cell observation quality, and yearly value dynamics. |
+| `dashboard/scripts/validate-schema.js` | Verification | Pre-build schema validator enforcing required properties on hotspots and zonal payloads. |
+| `execution/calculate_cell_quality.py` | Execution | Computes true per-cell valid-observation fractions across multi-decadal satellite composites. |
+| `execution/audit_annual_series_2010.py` | Execution | Annual 2000-2025 satellite time-series and CHIRPS rainfall anomaly audit for 2010 dip investigation. |
 | `execution/build_national_modis.py` | Execution | Ingestion and processing of real MODIS MOD13Q1 national mosaic and tile generation. |
 | `execution/run_national_gee.py` | Execution | National Google Earth Engine runner with server-side reductions and dry-run mode. |
 | `execution/verify_gee_auth.py` | Execution | Lightweight script to verify Earth Engine authentication with a single test scene. |
@@ -71,4 +75,5 @@ Comprehensive registry of tracked project files, architecture roles, and operati
 | `docs/MORNING_REPORT.md` | Documentation | Phase 0-6 status summary, reviewed decisions, weaknesses, and GEE enablement steps. |
 | `docs/MORNING_REPORT_V2.md` | Documentation | V2 morning briefing: Phase A-E delivery, sensor audit conclusions, and next steps. |
 | `docs/MORNING_REPORT_V2_1.md` | Documentation | V2.1 morning briefing: provenance audit, real MODIS data, GEE non-commercial activation. |
+| `docs/MORNING_REPORT_V2_2.md` | Documentation | V2.2 morning briefing: schema contract fixes, 2010 dip annual audit, CHIRPS rainfall correlation, 3-year running median option. |
 | `README.md` | Documentation | System overview, quickstart instructions, sample outputs, limitations, and phase status. |

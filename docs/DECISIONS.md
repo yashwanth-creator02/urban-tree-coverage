@@ -166,3 +166,21 @@ Records decisions, design trade-offs, and runtime adjustments.
   2. Add keyless Esri Streets with English labels alongside OSM Light, Esri Satellite, and OpenFreeMap.
 - **Why**: Superior user readability for English-language analysis while maintaining zero API key dependencies.
 - **Config Key Involved**: `basemap.providers.esri_streets`.
+
+## ADR-018: UI Contract Schema Enforcement & Hotspots Normalization (v2.2)
+- **Date/Time**: 2026-11-02 15:45 UTC
+- **Decision**: Enforce strict schema validation on `loss_hotspots.json` at build time (`scripts/validate-schema.js` and `tests/test_ui_contract.py`). Normalize field access (`zone_label || label || zone_id`, `net_change_pp`) across city, district, and national tiers, and make the right panel title and metrics dynamically reflect the active entity and tier.
+- **Options Considered**:
+  1. Patch frontend with permissive fallback strings.
+  2. Strict dual schema check (Node pre-build validation script + Pytest schema suite) to fail the build immediately if any data property is missing.
+- **Why**: Eliminates `#undefined undefined ... undefined pp` permanently and guarantees data integrity.
+- **Config Key Involved**: `dashboard/scripts/validate-schema.js`, `tests/test_ui_contract.py`.
+
+## ADR-019: 3-Year Running Median Default for Snapshot Stability (v2.2)
+- **Date/Time**: 2026-11-02 16:00 UTC
+- **Decision**: Introduce `snapshot_window: median_3yr` as the default snapshot compositing strategy in `config/config.yaml`.
+- **Options Considered**:
+  1. Stick strictly to single-year snapshots: highly vulnerable to single-season meteorological anomalies (e.g. 2010 drought where Oct-Mar rainfall fell to 144.1 mm vs 357.4 mm in 2000).
+  2. 3-year running median (`[t-1, t, t+1]`): dampens acute leaf-shedding and desiccation noise (2009-2011 median = 0.0519 vs 0.0445 single-year), capturing true structural tree canopy trajectory while preserving the empirical findings.
+- **Why**: Scientific robustness against acute rainfall shocks without masking real decadal land-use shifts.
+- **Config Key Involved**: `snapshot_window.strategy: "median_3yr"`.

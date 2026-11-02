@@ -206,3 +206,18 @@ The Urban Green-Cover Intelligence System is designed around modular adapters. E
   Guarantees all batch processing, national compositing, and raster downloads are bounded, resumable, and partitioned into tiles. Never loads full national rasters into RAM simultaneously.
 
 - **Alternatives**: Any bounding box array or path to custom boundary GeoJSON.
+
+---
+
+## 18. Snapshot Window Strategy (`snapshot_window`)
+- **Default**: `median_3yr` (3-year running median centered on snapshot year)
+- **Alternatives**: `single_year`
+- **Specification**:
+  - `median_3yr`: Aggregates multi-mission observations across `[t-1, t, t+1]` (e.g., 2009-2011 for the 2010 snapshot). Mitigates severe acute precipitation shocks (such as the 2010 meteorological drought, where Oct-Mar rainfall dropped to 144.1 mm vs decade average 275 mm) and eliminates single-year meteorological leaf-shedding noise.
+  - `single_year`: Computes composites exclusively from observations within the target calendar year. Highly sensitive to anomalous rainfall or extreme dry spells.
+- **Steps to Switch**:
+  In `config/config.yaml`:
+  ```yaml
+  snapshot_window:
+    strategy: "single_year" # or "median_3yr"
+  ```
