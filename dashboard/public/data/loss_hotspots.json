@@ -8,7 +8,10 @@
       "green_pct_2000": 95.76,
       "green_pct_2025": 15.76,
       "net_change_pct": -80.0,
-      "loss_km2": 0.897
+      "loss_km2": 0.897,
+      "rank": 1,
+      "zone_label": "Cell R13 C31",
+      "net_change_pp": -80.0
     },
     {
       "zone_id": "grid_12_27",
@@ -18,7 +21,10 @@
       "green_pct_2000": 90.91,
       "green_pct_2025": 20.68,
       "net_change_pct": -70.23,
-      "loss_km2": 0.8565
+      "loss_km2": 0.8565,
+      "rank": 2,
+      "zone_label": "Cell R12 C27",
+      "net_change_pp": -70.23
     },
     {
       "zone_id": "grid_12_26",
@@ -28,7 +34,10 @@
       "green_pct_2000": 88.15,
       "green_pct_2025": 20.23,
       "net_change_pct": -67.92,
-      "loss_km2": 0.8574
+      "loss_km2": 0.8574,
+      "rank": 3,
+      "zone_label": "Cell R12 C26",
+      "net_change_pp": -67.92
     },
     {
       "zone_id": "grid_11_07",
@@ -38,7 +47,10 @@
       "green_pct_2000": 77.01,
       "green_pct_2025": 16.93,
       "net_change_pct": -60.08,
-      "loss_km2": 0.8093
+      "loss_km2": 0.8093,
+      "rank": 4,
+      "zone_label": "Cell R11 C07",
+      "net_change_pp": -60.08
     },
     {
       "zone_id": "grid_28_05",
@@ -48,7 +60,10 @@
       "green_pct_2000": 67.4,
       "green_pct_2025": 7.99,
       "net_change_pct": -59.41,
-      "loss_km2": 0.7713
+      "loss_km2": 0.7713,
+      "rank": 5,
+      "zone_label": "Cell R28 C05",
+      "net_change_pp": -59.41
     },
     {
       "zone_id": "grid_12_24",
@@ -58,7 +73,10 @@
       "green_pct_2000": 89.22,
       "green_pct_2025": 31.82,
       "net_change_pct": -57.4,
-      "loss_km2": 0.828
+      "loss_km2": 0.828,
+      "rank": 6,
+      "zone_label": "Cell R12 C24",
+      "net_change_pp": -57.4
     },
     {
       "zone_id": "grid_28_06",
@@ -68,7 +86,10 @@
       "green_pct_2000": 57.39,
       "green_pct_2025": 2.02,
       "net_change_pct": -55.37,
-      "loss_km2": 0.8081
+      "loss_km2": 0.8081,
+      "rank": 7,
+      "zone_label": "Cell R28 C06",
+      "net_change_pp": -55.37
     },
     {
       "zone_id": "grid_33_11",
@@ -78,7 +99,10 @@
       "green_pct_2000": 74.06,
       "green_pct_2025": 19.43,
       "net_change_pct": -54.63,
-      "loss_km2": 0.6996
+      "loss_km2": 0.6996,
+      "rank": 8,
+      "zone_label": "Cell R33 C11",
+      "net_change_pp": -54.63
     },
     {
       "zone_id": "grid_10_04",
@@ -88,7 +112,10 @@
       "green_pct_2000": 76.02,
       "green_pct_2025": 22.19,
       "net_change_pct": -53.83,
-      "loss_km2": 0.7451
+      "loss_km2": 0.7451,
+      "rank": 9,
+      "zone_label": "Cell R10 C04",
+      "net_change_pp": -53.83
     },
     {
       "zone_id": "grid_24_16",
@@ -98,7 +125,10 @@
       "green_pct_2000": 68.6,
       "green_pct_2025": 15.14,
       "net_change_pct": -53.46,
-      "loss_km2": 0.7976
+      "loss_km2": 0.7976,
+      "rank": 10,
+      "zone_label": "Cell R24 C16",
+      "net_change_pp": -53.46
     },
     {
       "zone_id": "grid_11_23",
@@ -108,7 +138,10 @@
       "green_pct_2000": 78.33,
       "green_pct_2025": 25.9,
       "net_change_pct": -52.43,
-      "loss_km2": 0.7567
+      "loss_km2": 0.7567,
+      "rank": 11,
+      "zone_label": "Cell R11 C23",
+      "net_change_pp": -52.43
     },
     {
       "zone_id": "grid_09_03",
@@ -118,7 +151,10 @@
       "green_pct_2000": 87.17,
       "green_pct_2025": 35.47,
       "net_change_pct": -51.7,
-      "loss_km2": 0.7442
+      "loss_km2": 0.7442,
+      "rank": 12,
+      "zone_label": "Cell R09 C03",
+      "net_change_pp": -51.7
     },
     {
       "zone_id": "grid_10_03",
@@ -128,7 +164,10 @@
       "green_pct_2000": 69.79,
       "green_pct_2025": 20.02,
       "net_change_pct": -49.77,
-      "loss_km2": 0.6749
+      "loss_km2": 0.6749,
+      "rank": 13,
+      "zone_label": "Cell R10 C03",
+      "net_change_pp": -49.77
     },
     {
       "zone_id": "grid_25_11",
@@ -138,7 +177,10 @@
       "green_pct_2000": 75.48,
       "green_pct_2025": 28.1,
       "net_change_pct": -47.38,
-      "loss_km2": 0.7273
+      "loss_km2": 0.7273,
+      "rank": 14,
+      "zone_label": "Cell R25 C11",
+      "net_change_pp": -47.38
     },
     {
       "zone_id": "grid_23_19",
@@ -148,7 +190,10 @@
       "green_pct_2000": 59.09,
       "green_pct_2025": 12.03,
       "net_change_pct": -47.06,
-      "loss_km2": 0.7496
+      "loss_km2": 0.7496,
+      "rank": 15,
+      "zone_label": "Cell R23 C19",
+      "net_change_pp": -47.06
     }
   ],
   "_provenance": {
