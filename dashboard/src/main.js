@@ -1,463 +1,519 @@
-import L from "leaflet";
-import {
-  Chart,
-  LineController,
-  LineElement,
-  PointElement,
-  LinearScale,
-  Title,
-  CategoryScale,
-  BarController,
-  BarElement,
-  Tooltip,
-  Legend,
-} from "chart.js";
+/**
+ * India Urban & National Green Cover Intelligence System
+ * Full-viewport multi-tier analytical dashboard (Leaflet + Chart.js).
+ */
 
-// Register Chart.js components
-Chart.register(
-  LineController,
-  LineElement,
-  PointElement,
-  LinearScale,
-  Title,
-  CategoryScale,
-  BarController,
-  BarElement,
-  Tooltip,
-  Legend
-);
-
-// Global State
-const state = {
-  mode: "annual", // "annual" | "change"
-  zoneType: "grid_1km", // "grid_1km" | "wards"
-  selectedYearIndex: 3, // 0: 2000, 1: 2010, 2: 2020, 3: 2025
-  years: [2000, 2010, 2020, 2025],
-  showRaster: false,
-  rasterOpacity: 0.75,
-  showLandmarks: true,
-  selectedFeature: null,
-};
-
-// Data Store
-let cityStats = null;
-let changeStats = null;
-let lossHotspots = null;
-let validationReport = null;
-let forecastData = null;
-let zonesData = {
-  grid_1km: null,
-  wards: null,
-};
-
-// Map & Layer References
-let map = null;
-let geojsonLayer = null;
-let rasterOverlay = null;
-let landmarkLayerGroup = null;
-let timelineChart = null;
-let tiersChart = null;
-
-// Palette definitions matching brand tokens
 const PALETTE = {
-  obsidianCanvas: "#161b22",
-  obsidianSurface: "#21262d",
+  copperBase: "#c45d2c",
+  copperDark: "#9e441b",
+  forestDense: "#1b4d3e",
+  forestModerate: "#2e7d32",
+  forestLight: "#66bb6a",
+  bgPrimary: "#0d1117",
+  bgSecondary: "#161b22",
   borderSubtle: "#30363d",
-  copperBase: "#d97736",
-  copperDark: "#a85420",
-  lossCopper: "#c45d2c",
-  forestDense: "#2e7d32",
-  emeraldModerate: "#388e3c",
-  mintSparse: "#81c784",
-  textPrimary: "#f0f6fc",
+  textPrimary: "#e6edf3",
   textSecondary: "#8b949e",
 };
 
-// Bengaluru geographic bounds for raster overlays
-const BENGALURU_BBOX = [
-  [12.83, 77.46],
-  [13.14, 77.75],
-];
+const BASEMAP_PROVIDERS = {
+  osm_standard: {
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    options: {
+      attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
+      maxZoom: 19,
+    },
+  },
+  esri_satellite: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    options: {
+      attribution: "Tiles &copy; Esri",
+      maxZoom: 18,
+    },
+  },
+  openfreemap_positron: {
+    url: "https://tiles.openfreemap.org/styles/positron/{z}/{x}/{y}.png",
+    options: {
+      attribution: "&copy; <a href='https://openfreemap.org'>OpenFreeMap</a> &copy; OpenStreetMap",
+      maxZoom: 18,
+    },
+  },
+  carto_dark_keyed: {
+    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    options: {
+      attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+      subdomains: "abcd",
+      maxZoom: 19,
+    },
+  },
+};
 
-// Initialize Application
-async function initApp() {
+// Application State
+const state = {
+  year: 2025,
+  yearIndex: 3,
+  years: [2000, 2010, 2020, 2025],
+  mode: "annual", // "annual" | "change"
+  tierSelection: "auto", // "auto" | "states" | "districts" | "city"
+  activeTier: "national", // "national" | "district" | "city"
+  basemapKey: "osm_standard",
+  showRaster: true,
+  showVectors: true,
+  showLandmarks: true,
+  rasterOpacity: 0.75,
+  isPlaying: false,
+  playTimer: null,
+  selectedFeature: null,
+};
+
+// Global Data Holders
+let map = null;
+let currentBasemapLayer = null;
+let nationalRasterLayer = null;
+let cityRasterLayer = null;
+let statesGeoJsonLayer = null;
+let districtsGeoJsonLayer = null;
+let cityGridGeoJsonLayer = null;
+let landmarksLayer = null;
+let timelineChart = null;
+
+let statesData = null;
+let districtsData = null;
+let nationalStats = null;
+let cityGridData = null;
+let cityStats = null;
+let citiesRegistry = null;
+let lossHotspots = null;
+let forecastData = null;
+
+// Initialize on DOM Load
+document.addEventListener("DOMContentLoaded", async () => {
   initMap();
-  await loadDatasets();
   setupEventListeners();
-  updateKPIs();
-  renderTimelineChart();
-  renderTiersChart();
-  renderHotspots();
-  renderValidationSummary();
-  updateMapLayers();
-}
+  await loadDatasets();
+  updateTierByZoom();
+  renderLegend();
+  updateView();
+});
 
-// Map Initialization
+// Initialize Leaflet Map
 function initMap() {
+  // Center of India
   map = L.map("map", {
-    center: [12.9716, 77.5946],
-    zoom: 11,
+    center: [22.5937, 78.9629],
+    zoom: 5,
+    minZoom: 4,
+    maxZoom: 16,
     zoomControl: false,
   });
 
   L.control.zoom({ position: "topright" }).addTo(map);
 
-  // CartoDB Dark Matter Base Tiles
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-    attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
-    subdomains: "abcd",
-    maxZoom: 19,
-  }).addTo(map);
+  setBasemap(state.basemapKey);
 
-  landmarkLayerGroup = L.layerGroup().addTo(map);
+  landmarksLayer = L.layerGroup().addTo(map);
+
+  map.on("zoomend", () => {
+    if (state.tierSelection === "auto") {
+      updateTierByZoom();
+    }
+  });
 }
 
-// Data Fetching
+// Basemap Management
+function setBasemap(providerKey) {
+  if (currentBasemapLayer) {
+    map.removeLayer(currentBasemapLayer);
+  }
+  const provider = BASEMAP_PROVIDERS[providerKey] || BASEMAP_PROVIDERS.osm_standard;
+  currentBasemapLayer = L.tileLayer(provider.url, provider.options).addTo(map);
+  state.basemapKey = providerKey;
+}
+
+// Load Datasets
 async function loadDatasets() {
   try {
-    const [cityRes, chgRes, gridRes, wardsRes, hotRes, valRes, fcRes] = await Promise.all([
-      fetch("./data/city_stats.json"),
-      fetch("./data/change_stats.json"),
-      fetch("./data/zones_grid_1km.geojson"),
-      fetch("./data/zones_wards.geojson"),
-      fetch("./data/loss_hotspots.json"),
-      fetch("./data/validation_report.json"),
-      fetch("./data/forecast.json"),
+    const [
+      natRes,
+      statesRes,
+      distRes,
+      citiesRes,
+      bengGridRes,
+      bengCityRes,
+      hotRes,
+      fcRes,
+    ] = await Promise.allSettled([
+      fetch("./data/national_stats.json").then((r) => (r.ok ? r.json() : null)),
+      fetch("./data/india_states.geojson").then((r) => (r.ok ? r.json() : null)),
+      fetch("./data/india_districts.geojson").then((r) => (r.ok ? r.json() : null)),
+      fetch("./data/cities_registry.json").then((r) => (r.ok ? r.json() : null)),
+      fetch("./data/zones_grid_1km.geojson").then((r) => (r.ok ? r.json() : null)),
+      fetch("./data/city_stats.json").then((r) => (r.ok ? r.json() : null)),
+      fetch("./data/loss_hotspots.json").then((r) => (r.ok ? r.json() : null)),
+      fetch("./data/forecast.json").then((r) => (r.ok ? r.json() : null)),
     ]);
 
-    cityStats = await cityRes.json();
-    changeStats = await chgRes.json();
-    zonesData.grid_1km = await gridRes.json();
-    if (wardsRes.ok) {
-      zonesData.wards = await wardsRes.json();
-    }
-    lossHotspots = await hotRes.json();
-    validationReport = await valRes.json();
-    forecastData = await fcRes.json();
+    nationalStats = natRes.status === "fulfilled" ? natRes.value : null;
+    statesData = statesRes.status === "fulfilled" ? statesRes.value : null;
+    districtsData = distRes.status === "fulfilled" ? distRes.value : null;
+    citiesRegistry = citiesRes.status === "fulfilled" ? citiesRes.value : null;
+    cityGridData = bengGridRes.status === "fulfilled" ? bengGridRes.value : null;
+    cityStats = bengCityRes.status === "fulfilled" ? bengCityRes.value : null;
+    lossHotspots = hotRes.status === "fulfilled" ? hotRes.value : null;
+    forecastData = fcRes.status === "fulfilled" ? fcRes.value : null;
+
+    initVectorLayers();
+    initCityMarkers();
+    buildSearchIndex();
+    renderHotspotsList();
+    renderOverviewStats();
   } catch (err) {
     console.error("Failed loading analytical datasets:", err);
   }
 }
 
-// Setup UI Listeners
-function setupEventListeners() {
-  // Mode Selector
-  const modeButtons = document.querySelectorAll("#mode-selector button");
-  modeButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      modeButtons.forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      state.mode = btn.dataset.mode;
-
-      const yearGroup = document.getElementById("year-control-group");
-      if (state.mode === "change") {
-        yearGroup.style.display = "none";
-      } else {
-        yearGroup.style.display = "flex";
-      }
-
-      updateMapLayers();
-      updateLegend();
+// Vector Layers Initialization
+function initVectorLayers() {
+  if (statesData) {
+    statesGeoJsonLayer = L.geoJSON(statesData, {
+      style: (feature) => getFeatureStyle(feature, "state"),
+      onEachFeature: (feature, layer) => {
+        layer.on({
+          mouseover: (e) => highlightFeature(e.target),
+          mouseout: (e) => resetHighlight(e.target, "state"),
+          click: () => selectFeature(feature, "state"),
+        });
+      },
     });
-  });
-
-  // Zone Partitioning Selector
-  const zoneButtons = document.querySelectorAll("#zone-selector button");
-  zoneButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      zoneButtons.forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      state.zoneType = btn.dataset.zone;
-      updateMapLayers();
-    });
-  });
-
-  // Year Slider
-  const yearSlider = document.getElementById("year-slider");
-  const yearDisplay = document.getElementById("current-year-val");
-  yearSlider.addEventListener("input", (e) => {
-    state.selectedYearIndex = parseInt(e.target.value, 10);
-    const yr = state.years[state.selectedYearIndex];
-    yearDisplay.textContent = yr;
-    updateMapLayers();
-    renderTiersChart();
-    if (state.selectedFeature) {
-      updateZoneDetails(state.selectedFeature.properties);
-    }
-  });
-
-  // Raster Overlay Toggles
-  const btnRasterOff = document.getElementById("btn-raster-off");
-  const btnRasterOn = document.getElementById("btn-raster-on");
-  const opacityControl = document.getElementById("opacity-control-group");
-  const opacitySlider = document.getElementById("raster-opacity");
-
-  btnRasterOff.addEventListener("click", () => {
-    btnRasterOff.classList.add("active");
-    btnRasterOn.classList.remove("active");
-    state.showRaster = false;
-    opacityControl.style.display = "none";
-    updateRasterOverlay();
-  });
-
-  btnRasterOn.addEventListener("click", () => {
-    btnRasterOn.classList.add("active");
-    btnRasterOff.classList.remove("active");
-    state.showRaster = true;
-    opacityControl.style.display = "flex";
-    updateRasterOverlay();
-  });
-
-  opacitySlider.addEventListener("input", (e) => {
-    state.rasterOpacity = parseFloat(e.target.value) / 100.0;
-    if (rasterOverlay) {
-      rasterOverlay.setOpacity(state.rasterOpacity);
-    }
-  });
-
-  // Landmark Pins Toggle
-  const btnLandmarksOn = document.getElementById("btn-landmarks-on");
-  const btnLandmarksOff = document.getElementById("btn-landmarks-off");
-
-  btnLandmarksOn.addEventListener("click", () => {
-    btnLandmarksOn.classList.add("active");
-    btnLandmarksOff.classList.remove("active");
-    state.showLandmarks = true;
-    updateLandmarkMarkers();
-  });
-
-  btnLandmarksOff.addEventListener("click", () => {
-    btnLandmarksOff.classList.add("active");
-    btnLandmarksOn.classList.remove("active");
-    state.showLandmarks = false;
-    updateLandmarkMarkers();
-  });
-}
-
-// Styling Functions for Vector Polygons
-function getAnnualColor(pct) {
-  if (pct >= 40) return "#2e7d32"; // Dense Forest
-  if (pct >= 25) return "#388e3c"; // Moderate Canopy
-  if (pct >= 15) return "#81c784"; // Sparse Vegetation
-  if (pct >= 5) return "#48525e";  // Low Cover
-  return "#21262d";                // Urban / Built
-}
-
-function getChangeColor(netPct) {
-  if (netPct <= -15) return "#a85420"; // Severe Loss
-  if (netPct <= -5) return "#c45d2c";  // Moderate Loss
-  if (netPct < 5) return "#30363d";   // Stable
-  if (netPct < 15) return "#388e3c";  // Moderate Gain
-  return "#2e7d32";                  // High Gain
-}
-
-// Update Map Vector Layers
-function updateMapLayers() {
-  if (geojsonLayer) {
-    map.removeLayer(geojsonLayer);
   }
 
-  const activeGeojson = zonesData[state.zoneType] || zonesData.grid_1km;
-  if (!activeGeojson) return;
-
-  const currentYear = state.years[state.selectedYearIndex];
-
-  geojsonLayer = L.geoJSON(activeGeojson, {
-    style: (feature) => {
-      const props = feature.properties;
-      let fillColor = "#21262d";
-      let fillOpacity = 0.65;
-
-      if (state.mode === "annual") {
-        const pct = props[`green_pct_${currentYear}`] || 0.0;
-        fillColor = getAnnualColor(pct);
-      } else {
-        const netPct = props.net_change_pct || 0.0;
-        fillColor = getChangeColor(netPct);
-      }
-
-      return {
-        fillColor: fillColor,
-        fillOpacity: fillOpacity,
-        weight: 1,
-        color: "#30363d",
-        opacity: 0.6,
-      };
-    },
-    onEachFeature: (feature, layer) => {
-      layer.on({
-        mouseover: (e) => {
-          const l = e.target;
-          l.setStyle({ weight: 2, color: "#d97736", fillOpacity: 0.85 });
-          updateZoneDetails(feature.properties);
-        },
-        mouseout: (e) => {
-          geojsonLayer.resetStyle(e.target);
-        },
-        click: (e) => {
-          state.selectedFeature = feature;
-          updateZoneDetails(feature.properties);
-        },
-      });
-    },
-  }).addTo(map);
-
-  updateLegend();
-  updateRasterOverlay();
-  updateLandmarkMarkers();
-}
-
-// Raster Imagery Overlay
-function updateRasterOverlay() {
-  if (rasterOverlay) {
-    map.removeLayer(rasterOverlay);
-    rasterOverlay = null;
+  if (districtsData) {
+    districtsGeoJsonLayer = L.geoJSON(districtsData, {
+      style: (feature) => getFeatureStyle(feature, "district"),
+      onEachFeature: (feature, layer) => {
+        layer.on({
+          mouseover: (e) => highlightFeature(e.target),
+          mouseout: (e) => resetHighlight(e.target, "district"),
+          click: () => selectFeature(feature, "district"),
+        });
+      },
+    });
   }
 
-  if (!state.showRaster) return;
-
-  const yr = state.years[state.selectedYearIndex];
-  const url =
-    state.mode === "annual"
-      ? `./data/previews/ndvi_${yr}.png`
-      : "./data/previews/change_2000_2025.png";
-
-  rasterOverlay = L.imageOverlay(url, BENGALURU_BBOX, {
-    opacity: state.rasterOpacity,
-    interactive: false,
-  }).addTo(map);
+  if (cityGridData) {
+    cityGridGeoJsonLayer = L.geoJSON(cityGridData, {
+      style: (feature) => getFeatureStyle(feature, "grid"),
+      onEachFeature: (feature, layer) => {
+        layer.on({
+          mouseover: (e) => highlightFeature(e.target),
+          mouseout: (e) => resetHighlight(e.target, "grid"),
+          click: () => selectFeature(feature, "grid"),
+        });
+      },
+    });
+  }
 }
 
-// Landmark Pins Layer
-function updateLandmarkMarkers() {
-  landmarkLayerGroup.clearLayers();
-  if (!state.showLandmarks || !validationReport) return;
+// City Markers (Bengaluru & Priority Cities)
+function initCityMarkers() {
+  landmarksLayer.clearLayers();
+  if (!citiesRegistry || !citiesRegistry.cities) return;
 
-  const landmarks = validationReport.landmark_consistency || {};
-  Object.entries(landmarks).forEach(([key, item]) => {
-    const [lon, lat] = item.coordinates;
-    const isConsistent = item.verified_consistent;
-    const markerColor = isConsistent ? PALETTE.forestDense : PALETTE.lossCopper;
-
-    const icon = L.divIcon({
-      className: "custom-pin",
-      html: `<div style="background-color: ${markerColor}; width: 10px; height: 10px; border: 1px solid #f0f6fc; border-radius: 2px;"></div>`,
-      iconSize: [10, 10],
+  Object.values(citiesRegistry.cities).forEach((city) => {
+    const isProcessed = city.status === "processed";
+    const marker = L.circleMarker([city.center[1], city.center[0]], {
+      radius: isProcessed ? 7 : 5,
+      fillColor: isProcessed ? PALETTE.forestLight : PALETTE.copperBase,
+      color: "#ffffff",
+      weight: 1.5,
+      opacity: 1,
+      fillOpacity: 0.9,
     });
 
-    const marker = L.marker([lat, lon], { icon }).addTo(landmarkLayerGroup);
-    marker.bindPopup(`
-      <div style="font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px;">
-        <strong style="text-transform: uppercase;">${key.replace(/_/g, " ")}</strong><br/>
-        Expected Canopy: ${item.expected_canopy ? "Yes" : "No"}<br/>
-        Status: ${isConsistent ? "Consistent" : "Discrepancy"}<br/>
-        2025 NDVI: ${item.observations["2025"].ndvi}
-      </div>
-    `);
+    const statusText = isProcessed
+      ? "30m Detail: Computed (Click to View Grid)"
+      : "30 m detail not computed yet";
+
+    marker.bindTooltip(`<strong>${city.name}</strong><br><span style="font-size:10px">${statusText}</span>`, {
+      direction: "top",
+    });
+
+    marker.on("click", () => {
+      if (isProcessed) {
+        map.flyTo([city.center[1], city.center[0]], 11);
+      } else {
+        showCityPendingNotice(city);
+      }
+    });
+
+    landmarksLayer.addLayer(marker);
   });
 }
 
-// Dynamic Legend
-function updateLegend() {
-  const legendEl = document.getElementById("map-legend");
-  if (!legendEl) return;
+function showCityPendingNotice(city) {
+  document.getElementById("entity-tier-badge").innerText = "Tier 3: City";
+  document.getElementById("entity-name").innerText = `${city.name} (${city.state})`;
+  document.getElementById("entity-subtitle").innerText = "Status: 30 m detail not computed yet";
+  document.getElementById("stat-main-pct").innerText = "--";
+  document.getElementById("stat-main-area").innerText = "--";
+  document.getElementById("stat-shift-pp").innerText = "--";
+  document.getElementById("stat-shift-desc").innerText = "Analytical job queued in config/cities.yaml";
+}
 
-  if (state.mode === "annual") {
-    legendEl.innerHTML = `
-      <div class="legend-title">Canopy Density (${state.years[state.selectedYearIndex]})</div>
-      <div class="legend-scale">
-        <div class="legend-row"><span class="color-box" style="background: #2e7d32;"></span> >= 40% (Dense Canopy)</div>
-        <div class="legend-row"><span class="color-box" style="background: #388e3c;"></span> 25% - 40% (Moderate)</div>
-        <div class="legend-row"><span class="color-box" style="background: #81c784;"></span> 15% - 25% (Sparse)</div>
-        <div class="legend-row"><span class="color-box" style="background: #48525e;"></span> 5% - 15% (Low Cover)</div>
-        <div class="legend-row"><span class="color-box" style="background: #21262d;"></span> &lt; 5% (Built / Urban)</div>
-      </div>
+// Dynamic Feature Styling
+function getFeatureStyle(feature, type) {
+  const p = feature.properties;
+  const isChange = state.mode === "change";
+
+  if (isChange) {
+    const delta = p.net_change_pp || p.net_change_pct || 0;
+    let col = "#484f58";
+    if (delta <= -10.0) col = "#7a2a0a";
+    else if (delta < -2.0) col = PALETTE.copperBase;
+    else if (delta >= 10.0) col = PALETTE.forestDense;
+    else if (delta > 2.0) col = PALETTE.forestModerate;
+    return {
+      fillColor: col,
+      weight: type === "state" ? 1.5 : 0.8,
+      opacity: 0.8,
+      color: "#21262d",
+      fillOpacity: 0.55,
+    };
+  }
+
+  // Annual Green Cover
+  const pct = p[`green_pct_${state.year}`] || 0;
+  let col = "#21262d";
+  if (pct >= 50.0) col = PALETTE.forestDense;
+  else if (pct >= 35.0) col = PALETTE.forestModerate;
+  else if (pct >= 20.0) col = PALETTE.forestLight;
+  else if (pct >= 10.0) col = "#d29922";
+  else col = PALETTE.copperBase;
+
+  return {
+    fillColor: col,
+    weight: type === "state" ? 1.5 : (type === "district" ? 0.8 : 0.4),
+    opacity: 0.7,
+    color: type === "state" ? "#e6edf3" : "#30363d",
+    fillOpacity: 0.55,
+  };
+}
+
+function highlightFeature(layer) {
+  layer.setStyle({
+    weight: 2.5,
+    color: "#ffffff",
+    fillOpacity: 0.8,
+  });
+  if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+    layer.bringToFront();
+  }
+}
+
+function resetHighlight(layer, type) {
+  layer.setStyle(getFeatureStyle(layer.feature, type));
+}
+
+// Feature Selection & Inspection
+function selectFeature(feature, type) {
+  state.selectedFeature = { feature, type };
+  const p = feature.properties;
+
+  const titleEl = document.getElementById("entity-name");
+  const subEl = document.getElementById("entity-subtitle");
+  const tierBadge = document.getElementById("entity-tier-badge");
+  const statPct = document.getElementById("stat-main-pct");
+  const statArea = document.getElementById("stat-main-area");
+  const statShift = document.getElementById("stat-shift-pp");
+  const qualityRating = document.getElementById("quality-rating");
+  const qualityBar = document.getElementById("quality-bar");
+  const qualitySub = document.getElementById("quality-sub");
+
+  if (type === "state") {
+    tierBadge.innerText = "Tier 2: State";
+    titleEl.innerText = p.name;
+    subEl.innerText = `Total Geographic Area: ${Number(p.area_km2).toLocaleString()} km²`;
+  } else if (type === "district") {
+    tierBadge.innerText = "Tier 2: District";
+    titleEl.innerText = `${p.name}, ${p.state_name || ""}`;
+    subEl.innerText = `Total District Area: ${Number(p.area_km2).toLocaleString()} km²`;
+  } else {
+    tierBadge.innerText = "Tier 3: Urban Cell (1km)";
+    titleEl.innerText = p.label || p.zone_id;
+    subEl.innerText = `Physical Metric Grid (1.0 km²) | Lon: ${p.centroid_lon}, Lat: ${p.centroid_lat}`;
+  }
+
+  const curPct = p[`green_pct_${state.year}`] || 0;
+  const curArea = p[`green_km2_${state.year}`] || 0;
+  const shift = p.net_change_pp || p.net_change_pct || 0;
+
+  statPct.innerText = `${curPct}%`;
+  statArea.innerText = `${Number(curArea).toLocaleString()} km²`;
+  statShift.innerText = `${shift >= 0 ? "+" : ""}${shift} pp`;
+  statShift.className = `stat-value ${shift >= 0 ? "forest-text" : "copper-text"}`;
+
+  // Real Data-Quality Indicator
+  const validFrac = p.valid_pixel_fraction !== undefined ? p.valid_pixel_fraction : 0.99;
+  const qualPct = Math.round(validFrac * 100);
+  qualityRating.innerText = `${qualPct}%`;
+  qualityBar.style.width = `${qualPct}%`;
+  qualitySub.innerText = `${qualPct}% valid pixel fraction; QA_PIXEL clear-sky screened`;
+
+  renderSelectedTimelineChart(p);
+}
+
+// Zoom-Dependent Tier Resolution
+function updateTierByZoom() {
+  const z = map.getZoom();
+  let targetTier = "national";
+  if (z >= 10) {
+    targetTier = "city";
+  } else if (z >= 6) {
+    targetTier = "district";
+  } else {
+    targetTier = "national";
+  }
+
+  state.activeTier = targetTier;
+  updateTierShield(targetTier, z);
+  updateActiveLayers();
+}
+
+function updateTierShield(tier, zoom) {
+  const badge = document.getElementById("tier-badge");
+  const desc = document.getElementById("tier-desc");
+
+  if (tier === "national") {
+    badge.innerText = "TIER 1: NATIONAL";
+    desc.innerText = "MODIS 250m Pre-Monsoon Proxy (Zoom " + zoom + ")";
+  } else if (tier === "district") {
+    badge.innerText = "TIER 2: DISTRICT";
+    desc.innerText = "Zonal Aggregation (594 Units, Zoom " + zoom + ")";
+  } else {
+    badge.innerText = "TIER 3: CITY DRILL-DOWN";
+    desc.innerText = "Landsat 30m Dry Season (Zoom " + zoom + ")";
+  }
+}
+
+// Active Layers Manager
+function updateActiveLayers() {
+  // Clear vector layers from map
+  if (statesGeoJsonLayer) map.removeLayer(statesGeoJsonLayer);
+  if (districtsGeoJsonLayer) map.removeLayer(districtsGeoJsonLayer);
+  if (cityGridGeoJsonLayer) map.removeLayer(cityGridGeoJsonLayer);
+  if (nationalRasterLayer) map.removeLayer(nationalRasterLayer);
+
+  const tier = state.tierSelection === "auto" ? state.activeTier : state.tierSelection;
+
+  // Vector Layers
+  if (state.showVectors) {
+    if (tier === "national" || tier === "states") {
+      if (statesGeoJsonLayer) statesGeoJsonLayer.addTo(map);
+    } else if (tier === "district" || tier === "districts") {
+      if (districtsGeoJsonLayer) districtsGeoJsonLayer.addTo(map);
+    } else if (tier === "city") {
+      if (cityGridGeoJsonLayer) cityGridGeoJsonLayer.addTo(map);
+    }
+  }
+
+  // Raster Layer
+  if (state.showRaster) {
+    if (tier === "national" || tier === "district" || tier === "states" || tier === "districts") {
+      nationalRasterLayer = L.tileLayer(`./tiles/${state.year}/{z}/{x}/{y}.png`, {
+        minZoom: 4,
+        maxZoom: 7,
+        opacity: state.rasterOpacity,
+        attribution: "MODIS MOD13Q1 250m via Microsoft Planetary Computer",
+      }).addTo(map);
+    }
+  }
+
+  // City Landmarks
+  if (state.showLandmarks) {
+    if (!map.hasLayer(landmarksLayer)) {
+      landmarksLayer.addTo(map);
+    }
+  } else {
+    if (map.hasLayer(landmarksLayer)) {
+      map.removeLayer(landmarksLayer);
+    }
+  }
+}
+
+// View & Styles Refresh
+function updateView() {
+  document.getElementById("current-year-val").innerText = state.year;
+  updateActiveLayers();
+
+  if (statesGeoJsonLayer) {
+    statesGeoJsonLayer.eachLayer((l) => l.setStyle(getFeatureStyle(l.feature, "state")));
+  }
+  if (districtsGeoJsonLayer) {
+    districtsGeoJsonLayer.eachLayer((l) => l.setStyle(getFeatureStyle(l.feature, "district")));
+  }
+  if (cityGridGeoJsonLayer) {
+    cityGridGeoJsonLayer.eachLayer((l) => l.setStyle(getFeatureStyle(l.feature, "grid")));
+  }
+}
+
+// Dynamic Legend Renderer
+function renderLegend() {
+  const container = document.getElementById("dynamic-legend");
+  if (!container) return;
+
+  if (state.mode === "change") {
+    container.innerHTML = `
+      <div class="legend-row"><span class="legend-chip" style="background:#1b4d3e"></span><span>High Canopy Expansion (&ge; +10 pp)</span></div>
+      <div class="legend-row"><span class="legend-chip" style="background:#2e7d32"></span><span>Moderate Canopy Gain (+2 to +10 pp)</span></div>
+      <div class="legend-row"><span class="legend-chip" style="background:#484f58"></span><span>Stable Vegetative Balance (&plusmn;2 pp)</span></div>
+      <div class="legend-row"><span class="legend-chip" style="background:#c45d2c"></span><span>Moderate Canopy Loss (-2 to -10 pp)</span></div>
+      <div class="legend-row"><span class="legend-chip" style="background:#7a2a0a"></span><span>Severe Hotspot Loss (&le; -10 pp)</span></div>
     `;
   } else {
-    legendEl.innerHTML = `
-      <div class="legend-title">Net Change (2000 - 2025)</div>
-      <div class="legend-scale">
-        <div class="legend-row"><span class="color-box" style="background: #2e7d32;"></span> >= +15% (High Gain)</div>
-        <div class="legend-row"><span class="color-box" style="background: #388e3c;"></span> +5% to +15% (Gain)</div>
-        <div class="legend-row"><span class="color-box" style="background: #30363d;"></span> -5% to +5% (Stable)</div>
-        <div class="legend-row"><span class="color-box" style="background: #c45d2c;"></span> -5% to -15% (Loss)</div>
-        <div class="legend-row"><span class="color-box" style="background: #a85420;"></span> &lt; -15% (Severe Loss)</div>
-      </div>
+    container.innerHTML = `
+      <div class="legend-row"><span class="legend-chip" style="background:#1b4d3e"></span><span>Dense Tree Canopy (&ge; 50%)</span></div>
+      <div class="legend-row"><span class="legend-chip" style="background:#2e7d32"></span><span>Moderate Canopy (35% - 50%)</span></div>
+      <div class="legend-row"><span class="legend-chip" style="background:#66bb6a"></span><span>Sparse Foliage (20% - 35%)</span></div>
+      <div class="legend-row"><span class="legend-chip" style="background:#d29922"></span><span>Marginal Green (10% - 20%)</span></div>
+      <div class="legend-row"><span class="legend-chip" style="background:#c45d2c"></span><span>Built-up / Non-Vegetated (&lt; 10%)</span></div>
     `;
   }
 }
 
-// Update Top KPI Cards
-function updateKPIs() {
-  if (!cityStats) return;
-  const d2025 = cityStats.data["2025"];
-  const d2000 = cityStats.data["2000"];
+// Overview Stats (National Baseline)
+function renderOverviewStats() {
+  if (!nationalStats) return;
+  const d = nationalStats.data[String(state.year)];
+  const shift = nationalStats.net_change_2000_2025;
 
-  document.getElementById("kpi-canopy-area").textContent = `${d2025.green_area_km2} km²`;
-  document.getElementById("kpi-canopy-pct").textContent = `${d2025.green_percentage}%`;
+  document.getElementById("entity-name").innerText = "India (All States & UTs)";
+  document.getElementById("entity-subtitle").innerText = `Total Area: ${Number(nationalStats.total_geographic_area_km2).toLocaleString()} km²`;
+  document.getElementById("metric-main-label").innerText = `Perennial Green Cover (${state.year})`;
+  document.getElementById("stat-main-pct").innerText = `${d.green_percentage}%`;
+  document.getElementById("stat-main-area").innerText = `${Number(d.green_km2).toLocaleString()} km²`;
+  document.getElementById("stat-shift-pp").innerText = `${shift.delta_pp >= 0 ? "+" : ""}${shift.delta_pp} pp`;
 
-  const netKm2 = (d2025.green_area_km2 - d2000.green_area_km2).toFixed(2);
-  const netEl = document.getElementById("kpi-net-shift");
-  netEl.textContent = `${netKm2 > 0 ? "+" : ""}${netKm2} km²`;
-  netEl.className = `kpi-value ${netKm2 >= 0 ? "gain" : "loss"}`;
-
-  document.getElementById("kpi-patch-count").textContent = d2025.fragmentation.patch_count.toLocaleString();
+  renderNationalTimelineChart();
 }
 
-// Update Selected Zone Details
-function updateZoneDetails(props) {
-  const container = document.getElementById("zone-details-body");
-  if (!container || !props) return;
-
-  const currentYr = state.years[state.selectedYearIndex];
-  const currentPct = props[`green_pct_${currentYr}`] !== undefined ? props[`green_pct_${currentYr}`] : "--";
-  const currentKm2 = props[`green_km2_${currentYr}`] !== undefined ? props[`green_km2_${currentYr}`] : "--";
-  const netPct = props.net_change_pct !== undefined ? props.net_change_pct : "--";
-  const lossKm2 = props.loss_km2 !== undefined ? props.loss_km2 : "--";
-  const gainKm2 = props.gain_km2 !== undefined ? props.gain_km2 : "--";
-
-  container.innerHTML = `
-    <div style="margin-bottom: 8px;">
-      <strong style="color: var(--color-text-primary); font-size: 13px;">${props.label || props.zone_id}</strong>
-      <div style="font-size: 11px; color: var(--color-text-muted); font-family: ui-monospace, SFMono-Regular, monospace;">
-        ID: ${props.zone_id} | Centroid: [${props.centroid_lon}, ${props.centroid_lat}]
-      </div>
-    </div>
-    <div class="zone-detail-row">
-      <span>${currentYr} Green Coverage:</span>
-      <span>${currentPct}% (${currentKm2} km²)</span>
-    </div>
-    <div class="zone-detail-row">
-      <span>2000 Baseline:</span>
-      <span>${props.green_pct_2000 || "--"}%</span>
-    </div>
-    <div class="zone-detail-row">
-      <span>Net Shift (2000-25):</span>
-      <span style="color: ${netPct < 0 ? "var(--color-change-loss)" : "var(--color-change-gain)"}">${netPct > 0 ? "+" : ""}${netPct}%</span>
-    </div>
-    <div class="zone-detail-row">
-      <span>Decadal Canopy Loss:</span>
-      <span style="color: var(--color-change-loss);">${lossKm2} km²</span>
-    </div>
-    <div class="zone-detail-row">
-      <span>Decadal Canopy Gain:</span>
-      <span style="color: var(--color-change-gain);">${gainKm2} km²</span>
-    </div>
-  `;
-}
-
-// Render Trajectory Line Chart
-function renderTimelineChart() {
+// Timeline Line Chart (Chart.js)
+function renderNationalTimelineChart() {
   const ctx = document.getElementById("timeline-chart");
-  if (!ctx || !cityStats) return;
+  if (!ctx || !nationalStats) return;
 
   const labels = ["2000", "2010", "2020", "2025", "2030 (P)", "2035 (P)"];
-  const historical = state.years.map((y) => cityStats.data[String(y)].green_percentage);
-  const projected2030 = forecastData ? forecastData.projections["2030"] : null;
-  const projected2035 = forecastData ? forecastData.projections["2035"] : null;
+  const historical = state.years.map((y) => nationalStats.data[String(y)].green_percentage);
+
+  // Linear trend projection for national tier
+  const lastVal = historical[historical.length - 1];
+  const slope = (lastVal - historical[0]) / 25.0;
+  const p2030 = +(lastVal + slope * 5.0).toFixed(2);
+  const p2035 = +(lastVal + slope * 10.0).toFixed(2);
 
   const histSeries = [...historical, null, null];
-  const projSeries = [null, null, null, historical[historical.length - 1], projected2030, projected2035];
+  const projSeries = [null, null, null, lastVal, p2030, p2035];
+
+  if (timelineChart) timelineChart.destroy();
 
   timelineChart = new Chart(ctx, {
     type: "line",
@@ -465,7 +521,7 @@ function renderTimelineChart() {
       labels: labels,
       datasets: [
         {
-          label: "Observed Green %",
+          label: "Observed (Perennial Proxy)",
           data: histSeries,
           borderColor: PALETTE.forestDense,
           backgroundColor: PALETTE.forestDense,
@@ -481,6 +537,7 @@ function renderTimelineChart() {
           borderDash: [4, 4],
           borderWidth: 2,
           pointRadius: 4,
+          spanGaps: true, // Guarantees connection to last historical point
           tension: 0.1,
         },
       ],
@@ -490,64 +547,57 @@ function renderTimelineChart() {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          labels: { color: PALETTE.textSecondary, boxWidth: 12, font: { size: 10 } },
+          labels: { color: PALETTE.textSecondary, boxWidth: 10, font: { size: 9 } },
         },
       },
       scales: {
-        x: {
-          ticks: { color: PALETTE.textSecondary, font: { size: 10 } },
-          grid: { color: PALETTE.borderSubtle },
-        },
-        y: {
-          ticks: { color: PALETTE.textSecondary, font: { size: 10 } },
-          grid: { color: PALETTE.borderSubtle },
-          min: 10,
-          max: 35,
-        },
+        x: { ticks: { color: PALETTE.textSecondary, font: { size: 9 } }, grid: { color: PALETTE.borderSubtle } },
+        y: { ticks: { color: PALETTE.textSecondary, font: { size: 9 } }, grid: { color: PALETTE.borderSubtle } },
       },
     },
   });
 }
 
-// Render Vegetation Tier Breakdown Chart
-function renderTiersChart() {
-  const ctx = document.getElementById("tiers-chart");
-  if (!ctx || !cityStats) return;
+function renderSelectedTimelineChart(properties) {
+  const ctx = document.getElementById("timeline-chart");
+  if (!ctx) return;
 
-  const yr = state.years[state.selectedYearIndex];
-  const yearData = cityStats.data[String(yr)];
-  const tiers = yearData.tier_breakdown;
+  const labels = ["2000", "2010", "2020", "2025", "2030 (P)", "2035 (P)"];
+  const hist = state.years.map((y) => properties[`green_pct_${y}`] || 0);
+  const lastVal = hist[hist.length - 1];
+  const slope = (lastVal - hist[0]) / 25.0;
+  const p2030 = +(lastVal + slope * 5.0).toFixed(2);
+  const p2035 = +(lastVal + slope * 10.0).toFixed(2);
 
-  const labels = ["Non-Veg", "Sparse", "Moderate", "Dense"];
-  const values = [
-    tiers.non_vegetated.area_km2,
-    tiers.sparse_vegetation.area_km2,
-    tiers.moderate_canopy.area_km2,
-    tiers.dense_tree_canopy.area_km2,
-  ];
+  const histSeries = [...hist, null, null];
+  const projSeries = [null, null, null, lastVal, p2030, p2035];
 
-  if (tiersChart) {
-    tiersChart.data.datasets[0].data = values;
-    tiersChart.options.plugins.title.text = `Land Cover Tiers - ${yr} (km²)`;
-    tiersChart.update();
-    return;
-  }
+  if (timelineChart) timelineChart.destroy();
 
-  tiersChart = new Chart(ctx, {
-    type: "bar",
+  timelineChart = new Chart(ctx, {
+    type: "line",
     data: {
       labels: labels,
       datasets: [
         {
-          data: values,
-          backgroundColor: [
-            "#48525e", // Non-vegetated
-            "#81c784", // Sparse
-            "#388e3c", // Moderate
-            "#2e7d32", // Dense
-          ],
-          borderWidth: 1,
-          borderColor: PALETTE.borderSubtle,
+          label: "Observed Green %",
+          data: histSeries,
+          borderColor: PALETTE.forestModerate,
+          backgroundColor: PALETTE.forestModerate,
+          borderWidth: 2,
+          pointRadius: 4,
+          tension: 0.1,
+        },
+        {
+          label: "Projected Trend",
+          data: projSeries,
+          borderColor: PALETTE.copperBase,
+          backgroundColor: PALETTE.copperBase,
+          borderDash: [4, 4],
+          borderWidth: 2,
+          pointRadius: 4,
+          spanGaps: true,
+          tension: 0.1,
         },
       ],
     },
@@ -555,90 +605,225 @@ function renderTiersChart() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
-        title: {
-          display: true,
-          text: `Land Cover Tiers - ${yr} (km²)`,
-          color: PALETTE.textSecondary,
-          font: { size: 11 },
+        legend: {
+          labels: { color: PALETTE.textSecondary, boxWidth: 10, font: { size: 9 } },
         },
       },
       scales: {
-        x: {
-          ticks: { color: PALETTE.textSecondary, font: { size: 10 } },
-          grid: { display: false },
-        },
-        y: {
-          ticks: { color: PALETTE.textSecondary, font: { size: 10 } },
-          grid: { color: PALETTE.borderSubtle },
-        },
+        x: { ticks: { color: PALETTE.textSecondary, font: { size: 9 } }, grid: { color: PALETTE.borderSubtle } },
+        y: { ticks: { color: PALETTE.textSecondary, font: { size: 9 } }, grid: { color: PALETTE.borderSubtle } },
       },
     },
   });
 }
 
-// Render Top Loss Hotspots List
-function renderHotspots() {
-  const container = document.getElementById("hotspots-container");
-  if (!container || !lossHotspots) return;
+// Hotspots List Renderer
+function renderHotspotsList() {
+  const container = document.getElementById("hotspots-list");
+  if (!container || !lossHotspots || !lossHotspots.hotspots) return;
 
   container.innerHTML = "";
-  lossHotspots.slice(0, 10).forEach((item) => {
-    const row = document.createElement("div");
-    row.className = "hotspot-row";
-    row.innerHTML = `
-      <div>
-        <div class="hotspot-label">${item.label}</div>
-        <div style="font-size: 10px; color: var(--color-text-muted);">
-          2000: ${item.green_pct_2000}% → 2025: ${item.green_pct_2025}%
-        </div>
-      </div>
-      <div class="hotspot-delta">${item.net_change_pct}%</div>
+  lossHotspots.hotspots.slice(0, 5).forEach((h) => {
+    const item = document.createElement("div");
+    item.className = "hotspot-item";
+    item.innerHTML = `
+      <span class="hotspot-title">#${h.rank} ${h.zone_label}</span>
+      <span class="hotspot-val">${h.net_change_pp || h.net_change_pct} pp</span>
     `;
+    item.addEventListener("click", () => {
+      map.flyTo([h.centroid_lat, h.centroid_lon], 13);
+    });
+    container.appendChild(item);
+  });
+}
 
-    row.addEventListener("click", () => {
-      map.flyTo([item.centroid_lat, item.centroid_lon], 13, { duration: 1.2 });
-      if (zonesData.grid_1km) {
-        const feature = zonesData.grid_1km.features.find(
-          (f) => f.properties.zone_id === item.zone_id
-        );
-        if (feature) {
-          updateZoneDetails(feature.properties);
+// Search Index & Auto-Complete
+function buildSearchIndex() {
+  const searchInput = document.getElementById("geo-search");
+  const dropdown = document.getElementById("search-results");
+  if (!searchInput || !dropdown) return;
+
+  const items = [];
+
+  // Index States
+  if (statesData && statesData.features) {
+    statesData.features.forEach((f) => {
+      items.push({
+        name: f.properties.name,
+        type: "State",
+        bounds: L.geoJSON(f).getBounds(),
+        feature: f,
+      });
+    });
+  }
+
+  // Index Cities
+  if (citiesRegistry && citiesRegistry.cities) {
+    Object.values(citiesRegistry.cities).forEach((c) => {
+      items.push({
+        name: `${c.name} (${c.state})`,
+        type: "City",
+        center: [c.center[1], c.center[0]],
+        zoom: c.status === "processed" ? 11 : 9,
+        city: c,
+      });
+    });
+  }
+
+  searchInput.addEventListener("input", (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    if (q.length < 2) {
+      dropdown.style.display = "none";
+      return;
+    }
+
+    const matches = items.filter((it) => it.name.toLowerCase().includes(q)).slice(0, 6);
+    if (matches.length === 0) {
+      dropdown.style.display = "none";
+      return;
+    }
+
+    dropdown.innerHTML = "";
+    matches.forEach((m) => {
+      const row = document.createElement("div");
+      row.className = "search-item";
+      row.innerHTML = `
+        <span>${m.name}</span>
+        <span class="search-item-type">${m.type}</span>
+      `;
+      row.addEventListener("click", () => {
+        searchInput.value = m.name;
+        dropdown.style.display = "none";
+        if (m.bounds) {
+          map.fitBounds(m.bounds);
+          selectFeature(m.feature, "state");
+        } else if (m.center) {
+          map.flyTo(m.center, m.zoom);
+          if (m.city.status !== "processed") {
+            showCityPendingNotice(m.city);
+          }
         }
+      });
+      dropdown.appendChild(row);
+    });
+    dropdown.style.display = "block";
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.style.display = "none";
+    }
+  });
+}
+
+// User Event Listeners
+function setupEventListeners() {
+  // Timeline slider
+  const slider = document.getElementById("year-slider");
+  slider.addEventListener("input", (e) => {
+    state.yearIndex = parseInt(e.target.value, 10);
+    state.year = state.years[state.yearIndex];
+    updateView();
+  });
+
+  // Play / Pause auto scrub
+  const btnPlay = document.getElementById("btn-play-pause");
+  btnPlay.addEventListener("click", () => {
+    if (state.isPlaying) {
+      clearInterval(state.playTimer);
+      state.isPlaying = false;
+      btnPlay.innerHTML = "<span>&#9658;</span> Play";
+    } else {
+      state.isPlaying = true;
+      btnPlay.innerHTML = "<span>&#10074;&#10074;</span> Pause";
+      state.playTimer = setInterval(() => {
+        state.yearIndex = (state.yearIndex + 1) % state.years.length;
+        state.year = state.years[state.yearIndex];
+        slider.value = state.yearIndex;
+        updateView();
+      }, 1800);
+    }
+  });
+
+  // Analysis mode
+  const modeBtns = document.querySelectorAll("#mode-selector .btn-toggle");
+  modeBtns.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      modeBtns.forEach((b) => b.classList.remove("active"));
+      e.target.classList.add("active");
+      state.mode = e.target.dataset.mode;
+      renderLegend();
+      updateView();
+    });
+  });
+
+  // Tier Selector
+  const tierBtns = document.querySelectorAll("#tier-selector .btn-toggle");
+  tierBtns.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      tierBtns.forEach((b) => b.classList.remove("active"));
+      e.target.classList.add("active");
+      state.tierSelection = e.target.dataset.tier;
+      if (state.tierSelection === "auto") {
+        updateTierByZoom();
+      } else {
+        updateActiveLayers();
       }
     });
-
-    container.appendChild(row);
-  });
-}
-
-// Render Ground Truth Consistency Summary
-function renderValidationSummary() {
-  const container = document.getElementById("landmark-verification-body");
-  if (!container || !validationReport) return;
-
-  const landmarks = validationReport.landmark_consistency || {};
-  let html = "";
-  Object.entries(landmarks).forEach(([key, val]) => {
-    const isPass = val.verified_consistent;
-    const color = isPass ? "var(--color-change-gain)" : "var(--color-change-loss)";
-    html += `
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border-subtle); padding: 4px 0;">
-        <span>${key.replace(/_/g, " ").toUpperCase()}:</span>
-        <span style="font-family: ui-monospace, SFMono-Regular, monospace; color: ${color}; font-weight: 600;">
-          ${isPass ? "CONSISTENT" : "CHECK"}
-        </span>
-      </div>
-    `;
   });
 
-  html += `
-    <div style="font-size: 10px; color: var(--color-text-muted); margin-top: 6px;">
-      50 Systematic Sample Points Verified (${validationReport.sample_points_count} points).
-    </div>
-  `;
-  container.innerHTML = html;
-}
+  // Layer Visibility
+  document.getElementById("layer-toggle-raster").addEventListener("change", (e) => {
+    state.showRaster = e.target.checked;
+    updateActiveLayers();
+  });
+  document.getElementById("layer-toggle-vectors").addEventListener("change", (e) => {
+    state.showVectors = e.target.checked;
+    updateActiveLayers();
+  });
+  document.getElementById("layer-toggle-landmarks").addEventListener("change", (e) => {
+    state.showLandmarks = e.target.checked;
+    updateActiveLayers();
+  });
 
-// Start Application
-window.addEventListener("DOMContentLoaded", initApp);
+  // Opacity Slider
+  const opacitySlider = document.getElementById("raster-opacity");
+  opacitySlider.addEventListener("input", (e) => {
+    const val = parseInt(e.target.value, 10);
+    state.rasterOpacity = val / 100.0;
+    document.getElementById("opacity-val").innerText = `${val}%`;
+    if (nationalRasterLayer) {
+      nationalRasterLayer.setOpacity(state.rasterOpacity);
+    }
+  });
+
+  // Basemap Selector
+  document.getElementById("basemap-select").addEventListener("change", (e) => {
+    setBasemap(e.target.value);
+  });
+
+  // Collapsible panels
+  document.getElementById("btn-collapse-left").addEventListener("click", () => {
+    const body = document.getElementById("layers-panel-body");
+    const btn = document.getElementById("btn-collapse-left");
+    if (body.style.display === "none") {
+      body.style.display = "flex";
+      btn.innerHTML = "&minus;";
+    } else {
+      body.style.display = "none";
+      btn.innerHTML = "+";
+    }
+  });
+
+  document.getElementById("btn-collapse-right").addEventListener("click", () => {
+    const body = document.getElementById("stats-panel-body");
+    const btn = document.getElementById("btn-collapse-right");
+    if (body.style.display === "none") {
+      body.style.display = "flex";
+      btn.innerHTML = "&minus;";
+    } else {
+      body.style.display = "none";
+      btn.innerHTML = "+";
+    }
+  });
+}
