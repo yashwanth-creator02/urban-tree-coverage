@@ -130,3 +130,39 @@ Records decisions, design trade-offs, and runtime adjustments.
   2. Survey of India official boundaries via DataMeet: accurate, legally compliant, and open.
 - **Why**: Compliance with Indian cartographic laws and respectful sovereign depiction.
 - **Config Key Involved**: `boundary_source.active: "survey_of_india"`.
+
+## ADR-014: Zero-Fabrication Enforcement & Provenance Manifest Guard (Phase 1)
+- **Date/Time**: 2026-11-02 13:40 UTC
+- **Decision**: Purge all procedural/synthetic national tile pyramids and mock district stats. Mandate standardized `_provenance` manifests on every production file with automated unit-test enforcement (`tests/test_provenance.py`).
+- **Options Considered**:
+  1. Retain smooth procedural rasters as visual placeholders.
+  2. Strict zero-fabrication purge: delete synthetic tiles, reset unverified states/districts to pending, require verifiable manifests.
+- **Why**: Fundamental non-negotiable project rule: "NEVER fabricate data".
+- **Config Key Involved**: `src/core/provenance.py`.
+
+## ADR-015: Real MODIS 250m Pre-Monsoon Sovereign Rasterization (Phase 2)
+- **Date/Time**: 2026-11-02 13:55 UTC
+- **Decision**: Ingest 396 scenes of MODIS MOD13Q1 from Planetary Computer across all 16 sinusoidal tiles, mask with sovereign India geometry, calculate 594 district statistics, and render real static tile pyramids.
+- **Options Considered**:
+  1. Massive unclipped national array causing out-of-memory errors and border spillover.
+  2. Resumable chunked ingestion with overview sampling and strict sovereign boundary clipping.
+- **Why**: Delivers real, verifiable satellite data across all of India within lightweight transfer caps (~11 MB).
+- **Config Key Involved**: `data_source: "planetary_computer"`, `season_strategy: "pre_monsoon"`.
+
+## ADR-016: Non-Commercial Quota Strategy for Earth Engine (Phase 3)
+- **Date/Time**: 2026-11-02 14:15 UTC
+- **Decision**: Eliminate Google Cloud Storage (GCS) requirements to remove any GCP billing or credit card dependencies. Use server-side `reduceRegions` and bounded chunked downloads, with optional Google Drive export.
+- **Options Considered**:
+  1. Enforce GCS bucket export: fails on non-commercial accounts without billing.
+  2. Server-side reductions with local JSON export + optional Drive export: completely free, accessible, and compliant with non-commercial quotas.
+- **Why**: Matches user's exact account configuration (`earthengine authenticate`, no service account, no billing).
+- **Config Key Involved**: `src/adapters/gee.py`.
+
+## ADR-017: Keyless English Basemap Adoption (Phase 5)
+- **Date/Time**: 2026-11-02 14:30 UTC
+- **Decision**: Add Esri World Street Map (`esri_streets`) as a keyless basemap option providing clean English cartographic labels across India without watermarks.
+- **Options Considered**:
+  1. Default only to OSM Standard (uses local Indic scripts in many areas).
+  2. Add keyless Esri Streets with English labels alongside OSM Light, Esri Satellite, and OpenFreeMap.
+- **Why**: Superior user readability for English-language analysis while maintaining zero API key dependencies.
+- **Config Key Involved**: `basemap.providers.esri_streets`.

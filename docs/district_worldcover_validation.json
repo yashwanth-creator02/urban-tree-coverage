@@ -1,0 +1,96 @@
+{
+  "correlation_r": 0.8004,
+  "mean_bias_pp": 10.36,
+  "benchmarks": [
+    {
+      "district": "Wayanad",
+      "state": "Kerala",
+      "zone": "Western Ghats / Wet Evergreen",
+      "modis_perennial_pct": 100.0,
+      "esa_worldcover_tree_shrub_pct": 53.85,
+      "esa_worldcover_tree_pure_pct": 52.46,
+      "bias_pp": 46.15
+    },
+    {
+      "district": "South Goa",
+      "state": "Goa",
+      "zone": "West Coast / Tropical Forest",
+      "modis_perennial_pct": 98.21,
+      "esa_worldcover_tree_shrub_pct": 37.02,
+      "esa_worldcover_tree_pure_pct": 34.31,
+      "bias_pp": 61.19
+    },
+    {
+      "district": "Aizawl",
+      "state": "Mizoram",
+      "zone": "Northeast Hills / Moist Forest",
+      "modis_perennial_pct": 100.0,
+      "esa_worldcover_tree_shrub_pct": 85.08,
+      "esa_worldcover_tree_pure_pct": 85.07,
+      "bias_pp": 14.92
+    },
+    {
+      "district": "Hoshangabad",
+      "state": "Madhya Pradesh",
+      "zone": "Central India / Deciduous",
+      "modis_perennial_pct": 37.43,
+      "esa_worldcover_tree_shrub_pct": 27.53,
+      "esa_worldcover_tree_pure_pct": 26.54,
+      "bias_pp": 9.9
+    },
+    {
+      "district": "Bangalore Urban",
+      "state": "Karnataka",
+      "zone": "Deccan Plateau Urban",
+      "modis_perennial_pct": 61.37,
+      "esa_worldcover_tree_shrub_pct": 43.61,
+      "esa_worldcover_tree_pure_pct": 32.64,
+      "bias_pp": 17.76
+    },
+    {
+      "district": "Ludhiana",
+      "state": "Punjab",
+      "zone": "Indo-Gangetic Plain",
+      "modis_perennial_pct": 3.54,
+      "esa_worldcover_tree_shrub_pct": 34.39,
+      "esa_worldcover_tree_pure_pct": 33.88,
+      "bias_pp": -30.85
+    },
+    {
+      "district": "Nagpur",
+      "state": "Maharashtra",
+      "zone": "Semi-Arid Dry Deciduous",
+      "modis_perennial_pct": 12.07,
+      "esa_worldcover_tree_shrub_pct": 27.53,
+      "esa_worldcover_tree_pure_pct": 26.54,
+      "bias_pp": -15.46
+    },
+    {
+      "district": "Bikaner",
+      "state": "Rajasthan",
+      "zone": "Thar Desert / Arid",
+      "modis_perennial_pct": 0.0,
+      "esa_worldcover_tree_shrub_pct": 5.2,
+      "esa_worldcover_tree_pure_pct": 0.54,
+      "bias_pp": -5.2
+    },
+    {
+      "district": "Jaisalmer",
+      "state": "Rajasthan",
+      "zone": "Thar Desert Extreme Arid",
+      "modis_perennial_pct": 0.0,
+      "esa_worldcover_tree_shrub_pct": 5.2,
+      "esa_worldcover_tree_pure_pct": 0.54,
+      "bias_pp": -5.2
+    }
+  ],
+  "provenance": {
+    "source": "planetary_computer",
+    "collections": [
+      "modis-13Q1-061",
+      "esa-worldcover"
+    ],
+    "synthetic": false,
+    "verified": true
+  }
+}

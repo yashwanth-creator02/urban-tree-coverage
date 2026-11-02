@@ -42,6 +42,7 @@ Comprehensive registry of tracked project files, architecture roles, and operati
 | `src/core/area.py` | Core Logic | Equal-area in square kilometers and percentage calculation utilities. |
 | `src/core/change.py` | Core Logic | Multi-temporal change detection (loss, gain, stable) and summary accounting. |
 | `src/core/forecast.py` | Core Logic | Linear regression forecasting for 2030 and 2035 horizons with caveats. |
+| `src/core/provenance.py` | Core Logic | Provenance manifest creation, embedding, and verification guard. |
 | `tests/test_adapters.py` | Verification | Adapter contract verification and GEE graceful failure testing. |
 | `tests/test_area.py` | Verification | Area computation and percentage tests on synthetic arrays. |
 | `tests/test_calibration.py` | Verification | Surface reflectance scaling and QA_PIXEL bit decoding tests. |
@@ -50,14 +51,24 @@ Comprehensive registry of tracked project files, architecture roles, and operati
 | `tests/test_forecast.py` | Verification | OLS regression and trend projection unit tests. |
 | `tests/test_gee_adapter.py` | Verification | GEE adapter dry-run query validation and credential handling unit tests. |
 | `tests/test_indices.py` | Verification | Mathematical correctness tests for NDVI, EVI, SAVI, MSAVI. |
+| `tests/test_provenance.py` | Verification | Mandatory provenance manifest verification and anti-fabrication test suite. |
 | `tests/test_thresholding.py` | Verification | Multi-tier classification and Otsu threshold unit tests. |
+| `execution/build_national_modis.py` | Execution | Ingestion and processing of real MODIS MOD13Q1 national mosaic and tile generation. |
+| `execution/run_national_gee.py` | Execution | National Google Earth Engine runner with server-side reductions and dry-run mode. |
+| `execution/verify_gee_auth.py` | Execution | Lightweight script to verify Earth Engine authentication with a single test scene. |
+| `execution/validate_worldcover_districts.py` | Execution | Scientific benchmark comparing MODIS perennial green cover to ESA WorldCover 10m. |
+| `execution/quarantine_synthetic_data.py` | Execution | Anti-fabrication quarantine tool resetting unverified metrics. |
+| `execution/apply_provenance_manifests.py` | Execution | Attaches verified provenance manifests to all deliverables. |
 | `docs/FILE_INVENTORY.md` | Documentation | Master inventory of all tracked project files. |
-| `docs/DECISIONS.md` | Documentation | Architectural, methodology, and operational decision log (ADR-001 through ADR-013). |
+| `docs/DECISIONS.md` | Documentation | Architectural, methodology, and operational decision log (ADR-001 through ADR-017). |
 | `docs/BLOCKERS.md` | Documentation | Log of technical blockers, resolutions, and operational mitigations. |
 | `docs/OPTIONS.md` | Documentation | Option space specification: slot definitions, defaults, alternatives, and switching instructions. |
 | `docs/METHODOLOGY.md` | Documentation | Technical methodology: data fetching, cloud masking, compositing, index calculations, and change detection. |
-| `docs/VALIDATION.md` | Documentation | Empirical validation: sensor audit (L7 vs L8), threshold sensitivity, and ESA WorldCover benchmarks. |
+| `docs/PROVENANCE.md` | Documentation | Provenance audit matrix detailing empirical vs generated origin for every layer. |
+| `docs/VALIDATION.md` | Documentation | Empirical validation: sensor audit (L7 vs L8), benchmark correlation vs ESA WorldCover ($r=0.80$). |
+| `docs/GEE_SETUP.md` | Documentation | Step-by-step instructions for activating non-commercial Google Earth Engine. |
 | `docs/GCP_SETUP_GUIDE.md` | Documentation | Step-by-step instructions for activating Google Cloud Platform and Earth Engine. |
 | `docs/MORNING_REPORT.md` | Documentation | Phase 0-6 status summary, reviewed decisions, weaknesses, and GEE enablement steps. |
 | `docs/MORNING_REPORT_V2.md` | Documentation | V2 morning briefing: Phase A-E delivery, sensor audit conclusions, and next steps. |
+| `docs/MORNING_REPORT_V2_1.md` | Documentation | V2.1 morning briefing: provenance audit, real MODIS data, GEE non-commercial activation. |
 | `README.md` | Documentation | System overview, quickstart instructions, sample outputs, limitations, and phase status. |

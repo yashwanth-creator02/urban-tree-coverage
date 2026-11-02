@@ -24,6 +24,13 @@ const BASEMAP_PROVIDERS = {
       maxZoom: 19,
     },
   },
+  esri_streets: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+    options: {
+      attribution: "Tiles &copy; Esri &mdash; English Labels",
+      maxZoom: 19,
+    },
+  },
   esri_satellite: {
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     options: {
