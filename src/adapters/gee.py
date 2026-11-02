@@ -59,16 +59,24 @@ class GoogleEarthEngineAdapter(DataSourceAdapter):
     def has_credentials(self) -> bool:
         """
         Checks if valid GEE credentials exist in the environment without hanging.
+        Supports:
+        1. EE_PROJECT or GEE_PROJECT_ID with stored user credentials (~/.config/earthengine/credentials)
+        2. GEE_SERVICE_ACCOUNT_KEY_FILE
         """
         if self.config.get("load_env", True):
             self._load_env()
         key_file = os.getenv("GEE_SERVICE_ACCOUNT_KEY_FILE")
         if key_file:
             key_file = os.path.expanduser(key_file.strip("'\""))
-        project_id = os.getenv("GEE_PROJECT_ID")
+        project_id = os.getenv("EE_PROJECT") or os.getenv("GEE_PROJECT_ID")
+        user_creds = Path.home() / ".config" / "earthengine" / "credentials"
+
         if key_file and os.path.exists(key_file):
             return True
+        if project_id and (user_creds.exists() or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")):
+            return True
         if project_id:
+            # Check if ee can initialize without hanging
             return True
         return False
 
@@ -104,7 +112,7 @@ class GoogleEarthEngineAdapter(DataSourceAdapter):
         sa_email = os.getenv("GEE_SERVICE_ACCOUNT_EMAIL")
         if sa_email:
             sa_email = sa_email.strip("'\"")
-        project_id = os.getenv("GEE_PROJECT_ID")
+        project_id = os.getenv("EE_PROJECT") or os.getenv("GEE_PROJECT_ID")
         if project_id:
             project_id = project_id.strip("'\"")
 
@@ -135,22 +143,31 @@ class GoogleEarthEngineAdapter(DataSourceAdapter):
                 print(f"[GEE Adapter] Service account authentication failed: {e}")
                 # Fall through to test project_id directly if possible
 
-        # 2. Application Default Credentials or GCP Project ID
+        # 2. Non-commercial User Credentials or Application Default Credentials
         if project_id:
             try:
                 ee.Initialize(project=project_id)
                 self._initialized = True
-                print(f"[GEE Adapter] Successfully initialized using GCP Project ID: {project_id}")
+                print(f"[GEE Adapter] Successfully initialized using user credentials & project ID: {project_id}")
                 return True
             except Exception as e:
                 print(f"[GEE Adapter] Project ID initialization failed: {e}")
+                print(
+                    "[GEE Adapter] To authenticate non-commercial Earth Engine:\n"
+                    "  1. Run 'earthengine authenticate'\n"
+                    "  2. Run 'earthengine set_project <your-project-id>'\n"
+                    "  3. Set 'EE_PROJECT=<your-project-id>' in .env\n"
+                    "See /docs/GEE_SETUP.md for full instructions.\n"
+                    "Falling back to Microsoft Planetary Computer."
+                )
                 return False
 
         # Absent credentials notice
         msg = (
             "No Google Earth Engine credentials found in environment.\n"
-            "Required env vars: GEE_SERVICE_ACCOUNT_KEY_FILE or GEE_PROJECT_ID.\n"
-            "See /docs/CREDENTIALS_NEEDED.md for setup instructions.\n"
+            "Required env vars: EE_PROJECT or GEE_PROJECT_ID (with 'earthengine authenticate')\n"
+            "or GEE_SERVICE_ACCOUNT_KEY_FILE.\n"
+            "See /docs/GEE_SETUP.md for non-commercial setup instructions.\n"
             "Automatically falling back to active default: Planetary Computer."
         )
         if not silent:
@@ -321,6 +338,34 @@ class GoogleEarthEngineAdapter(DataSourceAdapter):
         )
         task.start()
         print(f"[GEE Adapter] Started GCS Export Task ID: {task.id} -> gs://{bucket}/{prefix}/{description}.tif")
+        return task
+
+    def export_to_drive(
+        self,
+        image_ee: Any,
+        description: str,
+        folder: str = "urban_green_cover",
+        region: Any = None,
+        scale: int = 30,
+    ) -> Any:
+        """
+        Launches an asynchronous export to Google Drive (available on non-commercial accounts without billing).
+        """
+        if not self._initialized:
+            raise RuntimeError("GEE is not initialized.")
+        ee = self._ee
+
+        task = ee.batch.Export.image.toDrive(
+            image=image_ee.select(["ndvi"]),
+            description=description,
+            folder=folder,
+            fileNamePrefix=description,
+            region=region,
+            scale=scale,
+            maxPixels=1e10,
+        )
+        task.start()
+        print(f"[GEE Adapter] Started Drive Export Task ID: {task.id} -> Google Drive: {folder}/{description}.tif")
         return task
 
     def dry_run(
