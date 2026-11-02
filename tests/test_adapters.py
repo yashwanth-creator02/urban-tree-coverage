@@ -84,3 +84,25 @@ def test_basemap_adapter_keyless_and_fallback():
     prov_keyed = adapter.get_provider("carto_dark_keyed")
     assert prov_keyed["name"] == "OSM"
 
+
+def test_basemap_adapter_with_api_key(monkeypatch):
+    from src.adapters.basemap import BasemapAdapter
+
+    monkeypatch.setenv("CARTO_API_KEY", "test_carto_secret_key")
+    cfg = {
+        "active": "carto_dark_keyed",
+        "providers": {
+            "osm_standard": {"name": "OSM", "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png"},
+            "carto_dark_keyed": {
+                "name": "CARTO Dark",
+                "url": "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key={key}",
+                "env_key": "CARTO_API_KEY",
+            },
+        },
+    }
+    adapter = BasemapAdapter(cfg)
+    prov = adapter.get_provider("carto_dark_keyed")
+    assert prov["name"] == "CARTO Dark"
+    assert "key=test_carto_secret_key" in prov["url"]
+
+

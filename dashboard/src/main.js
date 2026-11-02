@@ -46,7 +46,25 @@ const BASEMAP_PROVIDERS = {
     },
   },
   carto_dark_keyed: {
-    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    getUrl: () => {
+      const key = getCartoKey();
+      return key
+        ? `https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${encodeURIComponent(key)}`
+        : "";
+    },
+    options: {
+      attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+      subdomains: "abcd",
+      maxZoom: 19,
+    },
+  },
+  carto_voyager_keyed: {
+    getUrl: () => {
+      const key = getCartoKey();
+      return key
+        ? `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${encodeURIComponent(key)}`
+        : "";
+    },
     options: {
       attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
       subdomains: "abcd",
@@ -54,6 +72,17 @@ const BASEMAP_PROVIDERS = {
     },
   },
 };
+
+function getCartoKey() {
+  if (typeof __CARTO_KEY__ !== "undefined" && __CARTO_KEY__) {
+    return __CARTO_KEY__;
+  }
+  try {
+    return localStorage.getItem("carto_api_key") || "";
+  } catch (e) {
+    return "";
+  }
+}
 
 // Application State
 const state = {
@@ -132,9 +161,34 @@ function setBasemap(providerKey) {
   if (currentBasemapLayer) {
     map.removeLayer(currentBasemapLayer);
   }
-  const provider = BASEMAP_PROVIDERS[providerKey] || BASEMAP_PROVIDERS.osm_standard;
-  currentBasemapLayer = L.tileLayer(provider.url, provider.options).addTo(map);
-  state.basemapKey = providerKey;
+  let provider = BASEMAP_PROVIDERS[providerKey] || BASEMAP_PROVIDERS.osm_standard;
+  let url = typeof provider.getUrl === "function" ? provider.getUrl() : provider.url;
+
+  if (!url && providerKey && providerKey.startsWith("carto_")) {
+    const inputKey = prompt(
+      "CARTO Basemaps API key required.\nEnter your CARTO API key to unlock official licensed tiles (or cancel to fall back):",
+      ""
+    );
+    if (inputKey && inputKey.trim()) {
+      try {
+        localStorage.setItem("carto_api_key", inputKey.trim());
+      } catch (e) {}
+      url = provider.getUrl();
+    }
+  }
+
+  if (!url) {
+    console.warn(`Basemap ${providerKey} requires an API key. Falling back to OSM Standard.`);
+    provider = BASEMAP_PROVIDERS.osm_standard;
+    url = provider.url;
+    const select = document.getElementById("basemap-select");
+    if (select) select.value = "osm_standard";
+    state.basemapKey = "osm_standard";
+  } else {
+    state.basemapKey = providerKey;
+  }
+
+  currentBasemapLayer = L.tileLayer(url, provider.options).addTo(map);
 }
 
 // Load Datasets

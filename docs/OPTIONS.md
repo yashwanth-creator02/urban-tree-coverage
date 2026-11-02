@@ -169,13 +169,17 @@ The Urban Green-Cover Intelligence System is designed around modular adapters. E
 ## 14. Basemap Provider (`basemap`)
 - **Default**: `osm_standard` (Keyless, OpenStreetMap Standard light tiles)
 - **Alternatives**:
+  - `esri_streets`: Keyless Esri World Street Map with clean English cartographic labels.
   - `esri_satellite`: Keyless high-resolution satellite imagery from Esri World Imagery.
   - `openfreemap_positron`: Keyless clean vector/raster style hosted by OpenFreeMap.
-  - `carto_dark_keyed`: CARTO Dark Matter requiring `CARTO_API_KEY` in `.env` to prevent watermarking.
+  - `carto_dark_keyed`: CARTO Dark Matter requiring a CARTO API key to unlock official licensed raster tiles.
+  - `carto_voyager_keyed`: CARTO Voyager requiring a CARTO API key to unlock official licensed raster tiles.
 - **Switching Instructions**:
-  Set `basemap.active: esri_satellite` or `basemap.active: openfreemap_positron` in `config/config.yaml`.
-  If using CARTO, add `CARTO_API_KEY=your_key` to `.env` and set `basemap.active: carto_dark_keyed`.
-  The system automatically falls back to `osm_standard` if a keyed provider lacks credentials, guaranteeing that no watermarked tiles ever ship.
+  Set `basemap.active: esri_streets`, `basemap.active: esri_satellite`, or `basemap.active: openfreemap_positron` in `config/config.yaml`.
+  If using CARTO (Dark Matter or Voyager):
+  1. Add `CARTO_API_KEY=your_key` (or `VITE_CARTO_API_KEY=your_key`) to your local environment file.
+  2. Alternatively, enter the key directly in the dashboard UI prompt or via browser console: `localStorage.setItem('carto_api_key', 'your_key')`.
+  3. The system automatically injects `?key={key}` into CARTO tile URLs (`https://{s}.basemaps.cartocdn.com/rastertiles/{style}/{z}/{x}/{y}.png?key={key}`) and falls back to `osm_standard` if no key is present, guaranteeing zero watermarked tiles.
 
 ---
 

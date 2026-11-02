@@ -184,3 +184,12 @@ Records decisions, design trade-offs, and runtime adjustments.
   2. 3-year running median (`[t-1, t, t+1]`): dampens acute leaf-shedding and desiccation noise (2009-2011 median = 0.0519 vs 0.0445 single-year), capturing true structural tree canopy trajectory while preserving the empirical findings.
 - **Why**: Scientific robustness against acute rainfall shocks without masking real decadal land-use shifts.
 - **Config Key Involved**: `snapshot_window.strategy: "median_3yr"`.
+
+## ADR-020: CARTO Basemap Keyed Providers Integration (Voyager & Dark Matter)
+- **Date/Time**: 2026-11-02 16:30 UTC
+- **Decision**: Support CARTO Basemaps API key integration for official CARTO Voyager and CARTO Dark Matter raster tiles via `?key={key}` query parameters. The key is sourced via `CARTO_API_KEY` or `VITE_CARTO_API_KEY` in environment variables or through browser `localStorage.setItem('carto_api_key', '...')`. If the key is missing when selected, the UI prompts for the key or cleanly falls back to OSM Standard, ensuring zero watermarked tiles are served.
+- **Options Considered**:
+  1. Hardcode the user's CARTO key into git-tracked configuration or code (violates security rules against committing credentials).
+  2. Multi-tier environment and browser storage resolution: reads from process environment, Vite loadEnv, or browser localStorage with fallback to OSM.
+- **Why**: Allows seamless use of official CARTO Voyager and Dark Matter tiles without watermarks while strictly honoring credential safety.
+- **Config Key Involved**: `basemap.providers.carto_dark_keyed`, `basemap.providers.carto_voyager_keyed`.

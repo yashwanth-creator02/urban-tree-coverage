@@ -26,7 +26,7 @@ class BasemapAdapter:
         # Check if provider requires an env key
         env_var = provider.get("env_key")
         if env_var:
-            key_val = os.getenv(env_var)
+            key_val = os.getenv(env_var) or os.getenv(f"VITE_{env_var}")
             if key_val:
                 provider["url"] = provider["url"].replace("{key}", key_val)
             else:

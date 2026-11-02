@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import fs from "fs";
 import path from "path";
 
@@ -13,14 +13,24 @@ if (fs.existsSync(devPortPath)) {
   }
 }
 
-export default defineConfig({
-  root: "./",
-  server: {
-    port: port,
-    strictPort: true,
-  },
-  build: {
-    outDir: "dist",
-    emptyOutDir: true,
-  },
+export default defineConfig(({ mode }) => {
+  // Load env variables from repository root and dashboard directory
+  const rootDir = path.resolve(__dirname, "..");
+  const env = { ...process.env, ...loadEnv(mode, rootDir, "") };
+  const cartoApiKey = env.CARTO_API_KEY || env.VITE_CARTO_API_KEY || "";
+
+  return {
+    root: "./",
+    server: {
+      port: port,
+      strictPort: true,
+    },
+    build: {
+      outDir: "dist",
+      emptyOutDir: true,
+    },
+    define: {
+      __CARTO_KEY__: JSON.stringify(cartoApiKey),
+    },
+  };
 });

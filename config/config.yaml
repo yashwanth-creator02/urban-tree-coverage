@@ -101,7 +101,13 @@ basemap:
       max_zoom: 18
     carto_dark_keyed:
       name: "CARTO Dark Matter (Keyed)"
-      url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?api_key={key}"
+      url: "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key={key}"
+      env_key: "CARTO_API_KEY"
+      attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
+      max_zoom: 19
+    carto_voyager_keyed:
+      name: "CARTO Voyager (Keyed)"
+      url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key={key}"
       env_key: "CARTO_API_KEY"
       attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
       max_zoom: 19
