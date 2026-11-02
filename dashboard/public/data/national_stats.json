@@ -1,11 +1,46 @@
 {
-  "title": "India National Perennial Green Cover",
-  "has_real_data": false,
-  "status": "pending_satellite_ingestion",
-  "message": "No real data yet. National MODIS satellite pipeline awaiting execution.",
+  "title": "India National Perennial Green Cover (2000-2025)",
+  "sensor": "MODIS (MOD13Q1 250m) via Microsoft Planetary Computer",
+  "season_window": "Pre-Monsoon Summer (April 15 - May 31)",
+  "metric_label": "High perennial vegetation (proxy)",
+  "has_real_data": true,
+  "total_geographic_area_km2": 3152345.8,
+  "data": {
+    "2000": {
+      "green_km2": 773995.2,
+      "green_percentage": 24.55
+    },
+    "2010": {
+      "green_km2": 825556.6,
+      "green_percentage": 26.19
+    },
+    "2020": {
+      "green_km2": 1295936.4,
+      "green_percentage": 41.11
+    },
+    "2025": {
+      "green_km2": 1384880.4,
+      "green_percentage": 43.93
+    }
+  },
+  "net_change_2000_2025": {
+    "delta_pp": 19.38,
+    "delta_km2": 610885.2
+  },
   "_provenance": {
-    "source": "unverified",
+    "source": "microsoft_planetary_computer",
+    "collection": "modis-13Q1-061",
+    "item_count": 396,
+    "date_range": "2000-2025 Pre-Monsoon (Apr 15 - May 31)",
+    "processing_pipeline": "execution/build_national_modis.py",
     "synthetic": false,
-    "verified": false
+    "verified": true,
+    "code_version": "v2.1",
+    "timestamp_utc": "2026-11-02T08:24:12.761653+00:00",
+    "metric_label": "High Perennial Vegetation (NDVI >= 0.40)",
+    "season_strategy": "pre_monsoon",
+    "boundary_clipping": "Official Survey of India Sovereign Boundary Mask",
+    "resolution_m": 250,
+    "data_quality": "Filtered with 250m_16_days_pixel_reliability <= 1 (Good/Marginal Data)"
   }
 }
