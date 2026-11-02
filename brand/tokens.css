@@ -1,48 +1,110 @@
 :root {
   /* Obsidian Copper Palette (Default Dark Analytic Theme) */
+  --bg-canvas: #0a0d12;
   --bg-primary: #0e1117;
   --bg-secondary: #161b22;
   --bg-tertiary: #21262d;
-  --border-subtle: #30363d;
+  --bg-panel: #11151c;
+  --bg-surface: #181d24;
+  --bg-surface-hover: #222832;
+  --bg-surface-active: #2a313d;
+  --bg-input: #151a22;
+  --bg-input-focus: #1c222c;
+
+  --border-subtle: #2d343f;
+  --border-muted: #21262e;
+  --border-strong: #3d4756;
   --border-accent: #543d31;
+  --border-focus: #e88d5d;
+
   --text-primary: #f0f6fc;
-  --text-secondary: #8b949e;
+  --text-secondary: #9aa5b1;
   --text-muted: #6e7681;
+  --text-inverse: #0a0d12;
   
   --copper-base: #c45d2c;
   --copper-bright: #d97742;
   --copper-light: #e88d5d;
   --copper-dark: #9e441b;
   --copper-deep: #5c250c;
+  --copper-btn-bg: #82310b;
+  --copper-btn-text: #ffffff;
 
   --color-green-dense: #2e7d32;
   --color-green-moderate: #4caf50;
   --color-green-sparse: #81c784;
+  --color-green-light: #66bb6a;
 
   --color-loss: #c45d2c;
   --color-gain: #388e3c;
   --color-stable: #48525e;
+
+  /* Typography tokens (Hallmark Floor Rule 1 & TypeUI) */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* 4-point spacing scale (TypeUI spacing-principles) */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Nested radius scale: R_inner = max(0, R_outer - padding) */
+  --radius-lg: 6px;
+  --radius-md: 4px;
+  --radius-sm: 2px;
+
+  /* Motion tokens: transform and opacity only (Hallmark Floor Rule 2) */
+  --transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 250ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Shadows without wide blur */
+  --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-dropdown: 0 8px 24px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 [data-theme="radiant-light"] {
+  --bg-canvas: #f6f3ed;
   --bg-primary: #fcfbf9;
   --bg-secondary: #f4f1ea;
   --bg-tertiary: #ebe6dc;
+  --bg-panel: #fcfbf9;
+  --bg-surface: #f4f1ea;
+  --bg-surface-hover: #ebe6dc;
+  --bg-surface-active: #ded7c9;
+  --bg-input: #ffffff;
+  --bg-input-focus: #faf7f2;
+
   --border-subtle: #d8d1c5;
+  --border-muted: #e5ded2;
+  --border-strong: #b8aea0;
   --border-accent: #c49275;
+  --border-focus: #b85220;
+
   --text-primary: #1f2328;
   --text-secondary: #59636e;
   --text-muted: #818b98;
+  --text-inverse: #fcfbf9;
 
   --copper-base: #b85220;
   --copper-bright: #d97742;
+  --copper-light: #e88d5d;
   --copper-dark: #8a3610;
+  --copper-deep: #5c250c;
 
   --color-green-dense: #1b5e20;
   --color-green-moderate: #2e7d32;
   --color-green-sparse: #4caf50;
+  --color-green-light: #2e7d32;
 
   --color-loss: #b85220;
   --color-gain: #2e7d32;
   --color-stable: #7d8590;
+
+  --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-dropdown: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
 }

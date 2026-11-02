@@ -3,38 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Multi-decadal satellite analysis and historical green-cover intelligence for India and Bengaluru across 2000-2025.">
   <title>India Urban & National Green Cover Intelligence (2000-2025)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="./src/style.css">
 </head>
 <body class="full-viewport-app">
   <!-- Full-Viewport Map Container -->
-  <div id="map"></div>
+  <div id="map" role="region" aria-label="Geospatial Map Viewport"></div>
 
   <!-- Top Floating Navigation & Search Bar -->
   <header id="top-nav" class="floating-panel">
     <div class="nav-brand">
-      <h1 class="brand-title">INDIA GREEN COVER INTELLIGENCE</h1>
-      <span class="brand-subtitle">Multi-Decadal Earth Observation (2000 - 2025)</span>
+      <h1 class="brand-title">India Green Cover Intelligence</h1>
+      <span class="brand-subtitle">Multi-decadal Earth observation (2000 to 2025)</span>
     </div>
 
     <!-- Live Search Box -->
     <div class="search-box-container">
-      <input type="text" id="geo-search" placeholder="Search state, district, or city..." autocomplete="off">
-      <div id="search-results" class="search-dropdown" style="display: none;"></div>
+      <label for="geo-search" class="sr-only">Search location</label>
+      <input type="text" id="geo-search" placeholder="Search state, district, or city..." autocomplete="off" aria-label="Search geographic entity">
+      <div id="search-results" class="search-dropdown" style="display: none;" role="listbox"></div>
     </div>
 
     <!-- Active Tier & Resolution Shield -->
     <div class="tier-shield" id="active-tier-shield">
-      <span class="shield-tag" id="tier-badge">TIER 1: NATIONAL</span>
-      <span class="shield-desc" id="tier-desc">MODIS 250m Pre-Monsoon Proxy</span>
+      <span class="shield-tag" id="tier-badge">Tier 1: National</span>
+      <span class="shield-desc" id="tier-desc">MODIS 250m pre-monsoon proxy</span>
     </div>
 
     <!-- Basemap Switcher Dropdown -->
     <div class="basemap-selector">
-      <select id="basemap-select" aria-label="Select Basemap">
+      <label for="basemap-select" class="sr-only">Basemap style</label>
+      <select id="basemap-select" aria-label="Select basemap provider">
         <option value="osm_standard" selected>Basemap: OSM Light</option>
-        <option value="esri_streets">Basemap: Esri Streets (English Labels)</option>
+        <option value="esri_streets">Basemap: Esri Streets (English labels)</option>
         <option value="esri_satellite">Basemap: Esri Satellite</option>
         <option value="openfreemap_positron">Basemap: OpenFreeMap Positron</option>
         <option value="carto_dark_keyed">Basemap: CARTO Dark Matter (Keyed)</option>
@@ -44,47 +47,47 @@
   </header>
 
   <!-- Left Floating Analysis & Layer Controls Panel -->
-  <aside id="layers-panel" class="floating-panel collapsible">
+  <aside id="layers-panel" class="floating-panel collapsible" aria-label="Layers and Analysis Modes">
     <div class="panel-header">
-      <span class="panel-title">Layers & Modes</span>
-      <button class="panel-collapse-btn" id="btn-collapse-left" aria-label="Toggle Panel">&minus;</button>
+      <span class="panel-title">Layers &amp; Modes</span>
+      <button class="panel-collapse-btn" id="btn-collapse-left" aria-label="Toggle layers panel">&minus;</button>
     </div>
     <div class="panel-body" id="layers-panel-body">
       <!-- Mode Selection -->
       <div class="control-section">
-        <label class="section-label">Analysis Mode</label>
-        <div class="btn-group" id="mode-selector">
-          <button class="btn-toggle active" data-mode="annual">Green Cover</button>
-          <button class="btn-toggle" data-mode="change">Decadal Shift</button>
+        <span class="section-label" id="mode-label">Analysis mode</span>
+        <div class="btn-group" id="mode-selector" role="group" aria-labelledby="mode-label">
+          <button class="btn-toggle active" data-mode="annual">Green cover</button>
+          <button class="btn-toggle" data-mode="change">Decadal shift</button>
         </div>
       </div>
 
       <!-- Spatial Tier Switcher -->
       <div class="control-section">
-        <label class="section-label">Spatial Resolution</label>
-        <div class="btn-group" id="tier-selector">
-          <button class="btn-toggle active" data-tier="auto">Auto (Zoom)</button>
+        <span class="section-label" id="tier-label">Spatial resolution</span>
+        <div class="btn-group" id="tier-selector" role="group" aria-labelledby="tier-label">
+          <button class="btn-toggle active" data-tier="auto">Auto (zoom)</button>
           <button class="btn-toggle" data-tier="states">States</button>
           <button class="btn-toggle" data-tier="districts">Districts</button>
-          <button class="btn-toggle" data-tier="city">City Grid</button>
+          <button class="btn-toggle" data-tier="city">City grid</button>
         </div>
       </div>
 
       <!-- Layer Visibility Toggles -->
       <div class="control-section">
-        <label class="section-label">Visible Layers</label>
+        <span class="section-label">Visible layers</span>
         <div class="toggle-list">
           <label class="checkbox-row">
             <input type="checkbox" id="layer-toggle-raster" checked>
-            <span>Satellite Raster Layer</span>
+            <span>Satellite raster layer</span>
           </label>
           <label class="checkbox-row">
             <input type="checkbox" id="layer-toggle-vectors" checked>
-            <span>Administrative / Zonal Boundaries</span>
+            <span>Administrative boundaries</span>
           </label>
           <label class="checkbox-row">
             <input type="checkbox" id="layer-toggle-landmarks" checked>
-            <span>City Probes & Landmarks</span>
+            <span>City probes &amp; landmarks</span>
           </label>
         </div>
       </div>
@@ -92,55 +95,57 @@
       <!-- Opacity Slider -->
       <div class="control-section" id="opacity-section">
         <div class="slider-header">
-          <label class="section-label">Raster Opacity</label>
+          <label for="raster-opacity" class="section-label">Raster opacity</label>
           <span class="slider-val" id="opacity-val">75%</span>
         </div>
-        <input type="range" id="raster-opacity" min="10" max="100" value="75">
+        <input type="range" id="raster-opacity" min="10" max="100" value="75" aria-label="Raster layer opacity">
       </div>
 
       <!-- Dynamic Map Legend -->
       <div class="control-section legend-section">
-        <label class="section-label">Legend</label>
+        <span class="section-label">Legend</span>
         <div id="dynamic-legend" class="legend-content"></div>
       </div>
     </div>
   </aside>
 
   <!-- Right Floating Statistics & Inspection Panel -->
-  <aside id="stats-panel" class="floating-panel collapsible">
+  <aside id="stats-panel" class="floating-panel collapsible" aria-label="Zonal Statistics and Inspection">
     <div class="panel-header">
-      <span class="panel-title" id="stats-panel-title">National Overview</span>
-      <button class="panel-collapse-btn" id="btn-collapse-right" aria-label="Toggle Panel">&minus;</button>
+      <span class="panel-title" id="stats-panel-title">National overview</span>
+      <button class="panel-collapse-btn" id="btn-collapse-right" aria-label="Toggle statistics panel">&minus;</button>
     </div>
     <div class="panel-body" id="stats-panel-body">
-      <!-- Entity Identity Badge -->
+      <!-- Entity Identity Badge Row -->
       <div class="selected-entity-meta">
-        <span class="entity-tier" id="entity-tier-badge">National Tier</span>
-        <h2 class="entity-name" id="entity-name">India (All States)</h2>
-        <span class="entity-sub" id="entity-subtitle">Total Analyzed Area: 3,287,263 km²</span>
+        <div class="entity-title-row">
+          <h2 class="entity-name" id="entity-name">India (All States)</h2>
+          <span class="entity-tier" id="entity-tier-badge">National tier</span>
+        </div>
+        <span class="entity-sub" id="entity-subtitle">Total analyzed area: 3,287,263 km²</span>
       </div>
 
       <!-- Key Quantitative Metrics Grid -->
       <div class="stats-grid">
         <div class="stat-card">
-          <span class="stat-label" id="metric-main-label">Green Cover (2025)</span>
+          <span class="stat-label" id="metric-main-label">Green cover (2025)</span>
           <span class="stat-value forest-text" id="stat-main-pct">24.12%</span>
           <span class="stat-meta" id="stat-main-area">792,890 km²</span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">2000 - 2025 Net Shift</span>
+          <span class="stat-label">2000 to 2025 net shift</span>
           <span class="stat-value copper-text" id="stat-shift-pp">+0.72 pp</span>
-          <span class="stat-meta" id="stat-shift-desc">Overall Multi-Decadal Change</span>
+          <span class="stat-meta" id="stat-shift-desc">Overall multi-decadal change</span>
         </div>
       </div>
 
       <!-- Data Quality & Observational Rigor Indicator -->
       <div class="quality-card">
         <div class="quality-header">
-          <span class="quality-label">Data Observational Quality</span>
+          <span class="quality-label">Observational quality</span>
           <span class="quality-rating" id="quality-rating">99.5%</span>
         </div>
-        <div class="quality-bar-bg">
+        <div class="quality-bar-bg" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="99.5">
           <div class="quality-bar-fill" id="quality-bar" style="width: 99.5%;"></div>
         </div>
         <span class="quality-sub" id="quality-sub">High observation density; cloud-masked multi-scene composite</span>
@@ -149,11 +154,11 @@
       <!-- Historical Trajectory Chart -->
       <div class="chart-section">
         <div class="chart-header">
-          <span class="section-label">Multi-Decadal Trajectory</span>
-          <span class="chart-note">Projection: OLS Trend</span>
+          <span class="section-label">Multi-decadal trajectory</span>
+          <span class="chart-note">Projection: OLS trend</span>
         </div>
         <div class="chart-container">
-          <canvas id="timeline-chart"></canvas>
+          <canvas id="timeline-chart" role="img" aria-label="Multi-decadal green cover trajectory chart"></canvas>
         </div>
         <span class="disclaimer-text" id="chart-disclaimer">
           Small-sample linear extrapolation; actual future trajectory depends on land policy.
@@ -162,27 +167,27 @@
 
       <!-- Top Loss Hotspots / Districts List -->
       <div class="hotspots-section">
-        <span class="section-label" id="hotspots-title">Top Loss Hotspots (2000 - 2025)</span>
-        <div class="hotspots-list" id="hotspots-list"></div>
+        <span class="section-label" id="hotspots-title">Top loss hotspots (2000 to 2025)</span>
+        <div class="hotspots-list" id="hotspots-list" role="list"></div>
       </div>
     </div>
   </aside>
 
   <!-- Bottom Floating Interactive Timeline Slider Panel -->
-  <footer id="timeline-panel" class="floating-panel">
+  <footer id="timeline-panel" class="floating-panel" aria-label="Timeline Controls">
     <div class="timeline-controls">
       <!-- Play/Pause Auto Scrub Button -->
-      <button class="btn-play" id="btn-play-pause" aria-label="Play Timeline">
-        <span id="play-icon">&#9658;</span> Play
+      <button class="btn-play" id="btn-play-pause" aria-label="Play timeline animation">
+        <span id="play-icon" aria-hidden="true">&#9658;</span> Play
       </button>
 
       <div class="year-slider-wrapper">
         <div class="slider-year-label">
-          <span>Observation Year:</span>
+          <span>Observation year:</span>
           <strong id="current-year-val">2025</strong>
         </div>
-        <input type="range" id="year-slider" min="0" max="3" step="1" value="3" aria-label="Observation Year Slider">
-        <div class="slider-ticks">
+        <input type="range" id="year-slider" min="0" max="3" step="1" value="3" aria-label="Observation year slider">
+        <div class="slider-ticks" aria-hidden="true">
           <span data-idx="0">2000</span>
           <span data-idx="1">2010</span>
           <span data-idx="2">2020</span>
@@ -191,7 +196,7 @@
       </div>
 
       <div class="national-proxy-note">
-        <span class="tech-tag">National Metric: Perennial Green Cover (Proxy)</span>
+        <span class="tech-tag">National metric: Perennial green cover (proxy)</span>
       </div>
     </div>
   </footer>
