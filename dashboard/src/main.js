@@ -126,6 +126,7 @@ let forecastData = null;
 document.addEventListener("DOMContentLoaded", async () => {
   initMap();
   setupEventListeners();
+  initTooltips();
   await loadDatasets();
   updateTierByZoom();
   renderLegend();
@@ -1157,6 +1158,81 @@ function setupEventListeners() {
     } else {
       body.style.display = "none";
       btn.innerHTML = "+";
+    }
+  });
+}
+
+// Accessible Tooltip Positioning & Event Handler
+function initTooltips() {
+  const tooltipEl = document.getElementById("app-tooltip");
+  if (!tooltipEl) return;
+
+  let activeTrigger = null;
+
+  function showTooltip(target, text) {
+    if (!text) return;
+    activeTrigger = target;
+    tooltipEl.textContent = text;
+    tooltipEl.classList.add("visible");
+    tooltipEl.setAttribute("aria-hidden", "false");
+
+    const rect = target.getBoundingClientRect();
+    const tooltipRect = tooltipEl.getBoundingClientRect();
+    const padding = 12;
+
+    // Prefer positioning below or above depending on viewport space
+    let top = rect.bottom + 6;
+    let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+
+    // If bottom overflow, show above
+    if (top + tooltipRect.height > window.innerHeight - padding) {
+      top = rect.top - tooltipRect.height - 6;
+    }
+
+    // Clamp horizontal position within viewport
+    left = Math.max(padding, Math.min(left, window.innerWidth - tooltipRect.width - padding));
+
+    tooltipEl.style.top = `${Math.round(top)}px`;
+    tooltipEl.style.left = `${Math.round(left)}px`;
+  }
+
+  function hideTooltip() {
+    activeTrigger = null;
+    tooltipEl.classList.remove("visible");
+    tooltipEl.setAttribute("aria-hidden", "true");
+  }
+
+  document.addEventListener("mouseover", (e) => {
+    const trigger = e.target.closest("[data-tooltip]");
+    if (trigger) {
+      showTooltip(trigger, trigger.getAttribute("data-tooltip"));
+    }
+  });
+
+  document.addEventListener("mouseout", (e) => {
+    const trigger = e.target.closest("[data-tooltip]");
+    if (trigger && trigger === activeTrigger) {
+      hideTooltip();
+    }
+  });
+
+  document.addEventListener("focusin", (e) => {
+    const trigger = e.target.closest("[data-tooltip]");
+    if (trigger) {
+      showTooltip(trigger, trigger.getAttribute("data-tooltip"));
+    }
+  });
+
+  document.addEventListener("focusout", (e) => {
+    const trigger = e.target.closest("[data-tooltip]");
+    if (trigger && trigger === activeTrigger) {
+      hideTooltip();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      hideTooltip();
     }
   });
 }

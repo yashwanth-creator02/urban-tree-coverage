@@ -81,6 +81,12 @@ html, body {
   gap: var(--space-1);
 }
 
+.brand-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .brand-title {
   font-size: 13px;
   font-weight: 700;
@@ -101,16 +107,28 @@ html, body {
   max-width: 360px;
 }
 
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
 #geo-search {
   width: 100%;
   height: var(--control-height);
   background-color: var(--bg-input);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: var(--space-0) var(--space-3);
+  padding: var(--space-0) var(--space-6) var(--space-0) var(--space-3);
   color: var(--text-primary);
   font-size: 12px;
   transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.search-info-btn {
+  position: absolute;
+  right: var(--space-2);
 }
 
 #geo-search:hover {
@@ -178,6 +196,14 @@ html, body {
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   gap: var(--space-1);
+  cursor: help;
+}
+
+.shield-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
 }
 
 .shield-tag {
@@ -192,6 +218,12 @@ html, body {
 }
 
 /* Basemap Selector */
+.basemap-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 .basemap-selector select {
   height: var(--control-height);
   background-color: var(--bg-input);
@@ -217,6 +249,66 @@ html, body {
 .basemap-selector select:focus-visible {
   outline: 2px solid var(--copper-bright);
   outline-offset: 2px;
+}
+
+/* Info Badges & Glyphs */
+.info-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  background-color: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--copper-bright);
+  cursor: pointer;
+  padding: var(--space-0);
+  line-height: 1;
+  vertical-align: middle;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.info-badge:hover {
+  color: var(--text-primary);
+  border-color: var(--copper-bright);
+  background-color: var(--bg-surface-hover);
+}
+
+.info-badge:focus-visible {
+  outline: 2px solid var(--copper-bright);
+  outline-offset: 2px;
+}
+
+.info-badge:active {
+  transform: scale(0.95);
+}
+
+.info-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  font-size: 9px;
+  font-family: var(--font-sans);
+  color: var(--copper-bright);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  line-height: 1;
+}
+
+/* Layout Helpers for Info Label Alignment */
+.panel-title-row,
+.section-label-row,
+.stat-header-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 /* Left Floating Panel (Layers & Modes) */
@@ -713,11 +805,39 @@ input[type="range"]:focus-visible {
 .national-proxy-note {
   border-left: 1px solid var(--border-subtle);
   padding-left: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: help;
 }
 
 .tech-tag {
   font-size: 11px;
   color: var(--text-secondary);
+}
+
+/* Floating Accessible Tooltip Overlay */
+.app-tooltip {
+  position: fixed;
+  z-index: 3000;
+  pointer-events: none;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 11px;
+  line-height: 1.4;
+  max-width: 260px;
+  padding: var(--space-2) var(--space-3);
+  box-shadow: none;
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.app-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Reduced Motion Safety (Hallmark Floor Rule 7) */
