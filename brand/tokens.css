@@ -39,6 +39,24 @@
   --color-gain: #388e3c;
   --color-stable: #48525e;
 
+  /* Sequential vegetation ramp: 6 ordered steps, low to high density.
+     Copper is reserved for change/loss so a barren cell never reads as "loss". */
+  --ramp-veg-1: #6b7280;
+  --ramp-veg-2: #9aa88f;
+  --ramp-veg-3: #7cc48a;
+  --ramp-veg-4: #46a86a;
+  --ramp-veg-5: #2f8f57;
+  --ramp-veg-6: #1f6f4a;
+
+  /* Diverging change ramp: strong loss to strong gain */
+  --ramp-loss-strong: #7a2a0a;
+  --ramp-loss: #b0501f;
+  --ramp-change-neutral: #3a424e;
+  --ramp-gain: #3d8b4f;
+  --ramp-gain-strong: #1f6f4a;
+
+  --map-void: #0b0f14;
+
   /* Typography tokens (Hallmark Floor Rule 1 & TypeUI) */
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;

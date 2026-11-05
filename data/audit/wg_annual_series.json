@@ -1,0 +1,195 @@
+{
+  "title": "Annual 2000-2025 series for western_ghats_forest",
+  "method": "median composite, reliability<=1, NDVI>=0.40",
+  "window": "western_ghats_forest",
+  "bbox": [
+    74.0,
+    13.5,
+    75.5,
+    15.0
+  ],
+  "series": {
+    "2000": {
+      "valid_pixels": 417285,
+      "ndvi_median": 0.558,
+      "green_fraction_pct": 70.66,
+      "scene_count": 4,
+      "tile_count": 1
+    },
+    "2001": {
+      "valid_pixels": 417458,
+      "ndvi_median": 0.6013,
+      "green_fraction_pct": 74.45,
+      "scene_count": 4,
+      "tile_count": 1
+    },
+    "2002": {
+      "valid_pixels": 417567,
+      "ndvi_median": 0.5774,
+      "green_fraction_pct": 70.79,
+      "scene_count": 4,
+      "tile_count": 1
+    },
+    "2003": {
+      "valid_pixels": 421089,
+      "ndvi_median": 0.5726,
+      "green_fraction_pct": 71.01,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2004": {
+      "valid_pixels": 420527,
+      "ndvi_median": 0.5553,
+      "green_fraction_pct": 69.01,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2005": {
+      "valid_pixels": 420080,
+      "ndvi_median": 0.5956,
+      "green_fraction_pct": 73.28,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2006": {
+      "valid_pixels": 420538,
+      "ndvi_median": 0.5551,
+      "green_fraction_pct": 70.82,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2007": {
+      "valid_pixels": 420605,
+      "ndvi_median": 0.5866,
+      "green_fraction_pct": 72.75,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2008": {
+      "valid_pixels": 420756,
+      "ndvi_median": 0.6326,
+      "green_fraction_pct": 80.1,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2009": {
+      "valid_pixels": 420666,
+      "ndvi_median": 0.5851,
+      "green_fraction_pct": 74.24,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2010": {
+      "valid_pixels": 421080,
+      "ndvi_median": 0.6338,
+      "green_fraction_pct": 79.79,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2011": {
+      "valid_pixels": 421384,
+      "ndvi_median": 0.6273,
+      "green_fraction_pct": 82.67,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2012": {
+      "valid_pixels": 420478,
+      "ndvi_median": 0.6198,
+      "green_fraction_pct": 80.94,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2013": {
+      "valid_pixels": 419191,
+      "ndvi_median": 0.5847,
+      "green_fraction_pct": 75.18,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2014": {
+      "valid_pixels": 420392,
+      "ndvi_median": 0.647,
+      "green_fraction_pct": 84.57,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2015": {
+      "valid_pixels": 420801,
+      "ndvi_median": 0.6335,
+      "green_fraction_pct": 82.54,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2016": {
+      "valid_pixels": 420580,
+      "ndvi_median": 0.5874,
+      "green_fraction_pct": 73.63,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2017": {
+      "valid_pixels": 421437,
+      "ndvi_median": 0.5969,
+      "green_fraction_pct": 75.87,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2018": {
+      "valid_pixels": 420130,
+      "ndvi_median": 0.6242,
+      "green_fraction_pct": 80.83,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2019": {
+      "valid_pixels": 420683,
+      "ndvi_median": 0.603,
+      "green_fraction_pct": 77.66,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2020": {
+      "valid_pixels": 420941,
+      "ndvi_median": 0.6538,
+      "green_fraction_pct": 85.14,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2021": {
+      "valid_pixels": 420500,
+      "ndvi_median": 0.6982,
+      "green_fraction_pct": 91.16,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2022": {
+      "valid_pixels": 421161,
+      "ndvi_median": 0.6841,
+      "green_fraction_pct": 91.57,
+      "scene_count": 8,
+      "tile_count": 1
+    },
+    "2023": {
+      "valid_pixels": 421016,
+      "ndvi_median": 0.6476,
+      "green_fraction_pct": 84.51,
+      "scene_count": 7,
+      "tile_count": 1
+    },
+    "2024": {
+      "valid_pixels": 420935,
+      "ndvi_median": 0.675,
+      "green_fraction_pct": 86.05,
+      "scene_count": 8,
+      "tile_count": 1
+    },
+    "2025": {
+      "valid_pixels": 421029,
+      "ndvi_median": 0.6948,
+      "green_fraction_pct": 89.37,
+      "scene_count": 7,
+      "tile_count": 1
+    }
+  }
+}

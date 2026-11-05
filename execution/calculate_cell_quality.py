@@ -79,7 +79,8 @@ manifest = create_provenance_manifest(
     date_range="2000-2025 Jan-Mar",
     processing_pipeline="execution/calculate_cell_quality.py",
     extra={
-        "metric_definition": "Urban Tree Canopy & Green Cover (Landsat 30m Jan-Mar NDVI >= 0.40)",
+        "metric_label": "Green cover (Landsat 30 m, Jan to Mar NDVI)",
+        "metric_definition": "Share of each cell with NDVI at or above 0.40, from a Jan to Mar cloud-screened Landsat 30 m median composite (Landsat 5 TM, 8 OLI, 9 OLI-2). Measures mixed canopy, grass and crops, not trees alone.",
         "observation_quality": "True per-cell clear-sky observation count across L5, L8, and L9",
         "mean_valid_pixel_fraction": round(float(np.mean(valid_nums)), 4)
     }

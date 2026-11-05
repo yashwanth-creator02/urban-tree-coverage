@@ -1,31 +1,41 @@
 {
-  "title": "India National Perennial Green Cover (2000-2025)",
+  "title": "India pre-monsoon vegetation greenness (2000-2025)",
   "sensor": "MODIS (MOD13Q1 250m) via Microsoft Planetary Computer",
   "season_window": "Pre-Monsoon Summer (April 15 - May 31)",
-  "metric_label": "High perennial vegetation (proxy)",
+  "metric_label": "Pre-monsoon vegetation greenness (MODIS 250 m)",
+  "metric_definition": "Share of observed land with NDVI >= 0.40 in the April 15 to May 31 window, from a per-tile median of MODIS MOD13Q1 16-day composites. This is a greenness proxy, not a tree-canopy map: irrigated cropland, plantation and grass all register.",
+  "metric_caveat": "Cross-decade comparability is limited. Before 2003 the composite holds Terra alone; from 2003 Aqua joins, roughly doubling the scene count and shifting the median slightly. The threshold also sits near the middle of the Indian NDVI distribution, so a small shift in the distribution moves the mapped share sharply. Read the median NDVI series alongside the thresholded series before treating any decade-to-decade step as real greening.",
   "has_real_data": true,
   "total_geographic_area_km2": 3152345.8,
   "data": {
     "2000": {
-      "green_km2": 773995.2,
-      "green_percentage": 24.55
+      "green_km2": 764710.7,
+      "observed_km2": 3097736.2,
+      "green_percentage": 24.69,
+      "median_ndvi": 0.3598
     },
     "2010": {
-      "green_km2": 825556.6,
-      "green_percentage": 26.19
+      "green_km2": 763984.2,
+      "observed_km2": 3092745.1,
+      "green_percentage": 24.7,
+      "median_ndvi": 0.3598
     },
     "2020": {
-      "green_km2": 1295936.4,
-      "green_percentage": 41.11
+      "green_km2": 1198671.1,
+      "observed_km2": 3089187.0,
+      "green_percentage": 38.8,
+      "median_ndvi": 0.438
     },
     "2025": {
-      "green_km2": 1384880.4,
-      "green_percentage": 43.93
+      "green_km2": 1317660.9,
+      "observed_km2": 3098526.2,
+      "green_percentage": 42.53,
+      "median_ndvi": 0.4797
     }
   },
   "net_change_2000_2025": {
-    "delta_pp": 19.38,
-    "delta_km2": 610885.2
+    "delta_pp": 17.84,
+    "delta_km2": 552950.2
   },
   "_provenance": {
     "source": "microsoft_planetary_computer",
@@ -35,12 +45,24 @@
     "processing_pipeline": "execution/build_national_modis.py",
     "synthetic": false,
     "verified": true,
-    "code_version": "v2.1",
-    "timestamp_utc": "2026-11-02T08:24:12.761653+00:00",
-    "metric_label": "High Perennial Vegetation (NDVI >= 0.40)",
+    "code_version": "v2.3",
+    "timestamp_utc": "2026-11-05T03:48:15.200616+00:00",
+    "metric_label": "Pre-monsoon vegetation greenness (MODIS 250 m)",
+    "metric_definition": "Share of observed land with NDVI >= 0.40 in the April 15 to May 31 window, from a per-tile median of MODIS MOD13Q1 16-day composites. This is a greenness proxy, not a tree-canopy map: irrigated cropland, plantation and grass all register.",
+    "metric_caveat": "Cross-decade comparability is limited. Before 2003 the composite holds Terra alone; from 2003 Aqua joins, roughly doubling the scene count and shifting the median slightly. The threshold also sits near the middle of the Indian NDVI distribution, so a small shift in the distribution moves the mapped share sharply. Read the median NDVI series alongside the thresholded series before treating any decade-to-decade step as real greening.",
+    "green_threshold": 0.4,
     "season_strategy": "pre_monsoon",
     "boundary_clipping": "Official Survey of India Sovereign Boundary Mask",
     "resolution_m": 250,
+    "analysis_grid_deg": 0.015,
+    "composite_method": "Pixel-wise median across all 16-day composites in the window, per sinusoidal tile; NDVI decimated by averaging, QA decimated by nearest",
+    "scene_sampling_note": "Terra only before 2003; Terra plus Aqua from 2003",
+    "scenes_per_year": {
+      "2000": 64,
+      "2010": 112,
+      "2020": 112,
+      "2025": 108
+    },
     "data_quality": "Filtered with 250m_16_days_pixel_reliability <= 1 (Good/Marginal Data)"
   }
 }

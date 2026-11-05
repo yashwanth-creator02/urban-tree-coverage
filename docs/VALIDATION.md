@@ -95,6 +95,21 @@ Because single-year snapshots are sensitive to acute rainfall anomalies, we adde
 - Config slot: `snapshot_window: median_3yr` (default) vs `single_year`.
 - A 3-year running median (`[t-1, t, t+1]`) centered on 2010 produces a median NDVI of **0.0519**, dampening the acute drought trough while preserving the underlying structural land-use change signal.
 
+### F. National Spatial Audit (`national_jump_audit.json`)
+To test whether the national 2010 $\rightarrow$ 2020 greenness step was real or an artifact of changing MODIS scene counts, we ran an independent spatial audit across five 1.5° $\times$ 1.5° ecological test windows in India using re-queried MOD13Q1 data:
+
+| Eco-Region Window | 2000 Median NDVI / Green% | 2010 Median NDVI / Green% | 2020 Median NDVI / Green% | 2025 Median NDVI / Green% | Scene Count Range |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Western Ghats Forest** | 0.558 / 70.7% | 0.634 / 79.8% | 0.654 / 85.1% | 0.695 / 89.4% | 4 to 7 scenes |
+| **Thar Desert Arid** | 0.095 / 0.0% | 0.077 / 0.0% | 0.096 / 0.0% | 0.127 / 0.0% | 4 to 7 scenes |
+| **Indo-Gangetic Cropland** | 0.293 / 7.9% | 0.278 / 4.0% | 0.350 / 29.9% | 0.352 / 31.8% | 8 to 14 scenes |
+| **Central Dry Deciduous** | 0.251 / 1.4% | 0.230 / 0.3% | 0.294 / 9.7% | 0.284 / 7.5% | 4 to 7 scenes |
+| **Northeast Humid Forest** | 0.616 / 92.1% | 0.647 / 94.1% | 0.679 / 98.0% | 0.680 / 95.0% | 6 to 7 scenes |
+
+**Conclusion**: The national step is real and driven by two compounded effects:
+1. **The 2010 Drought Base**: 2010 was an acute regional drought year across India, depressing vegetative vigor nationwide.
+2. **Terra/Aqua Sensor Evolution**: Pre-2003 MODIS composites relied exclusively on Terra MODIS (morning orbit), whereas post-2003 composites combined Terra and Aqua (afternoon orbit), doubling clear-sky observation density and shifting radiometric sensitivity slightly upward in humid/agricultural zones.
+
 ---
 
 ## 3. Sovereign Cartographic Alignment

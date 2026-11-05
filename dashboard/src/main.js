@@ -3,20 +3,36 @@
  * Full-viewport multi-tier analytical dashboard (Leaflet + Chart.js).
  */
 
+// Chart colours are read from the design tokens so the light and dark themes both work.
+const token = (name, fallback) => {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+};
+
 const PALETTE = {
-  copperBase: "#c45d2c",
-  copperDark: "#9e441b",
-  forestDense: "#1b4d3e",
-  forestModerate: "#2e7d32",
-  forestLight: "#66bb6a",
-  bgPrimary: "#0d1117",
-  bgSecondary: "#161b22",
-  borderSubtle: "#30363d",
-  textPrimary: "#e6edf3",
-  textSecondary: "#8b949e",
+  copperBase: token("--copper-base", "#c45d2c"),
+  forestDense: token("--veg-5", "#1b4d3e"),
+  forestModerate: token("--veg-3", "#2e7d32"),
+  forestLight: token("--veg-1", "#66bb6a"),
+  borderSubtle: token("--border-subtle", "#2d343f"),
+  textPrimary: token("--text-primary", "#f0f6fc"),
+  textSecondary: token("--text-secondary", "#9aa5b1"),
+  textMuted: token("--text-muted", "#6e7681"),
 };
 
 const BASEMAP_PROVIDERS = {
+  esri_dark: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+    options: {
+      attribution: "Tiles &copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors",
+      maxZoom: 16,
+      noWrap: true,
+    },
+    labels: {
+      url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+      options: { maxZoom: 16, noWrap: true, pane: "shadowPane" },
+    },
+  },
   osm_standard: {
     url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     options: {
@@ -92,8 +108,8 @@ const state = {
   mode: "annual", // "annual" | "change"
   tierSelection: "auto", // "auto" | "states" | "districts" | "city"
   activeTier: "national", // "national" | "district" | "city"
-  basemapKey: "osm_standard",
-  showRaster: true,
+  basemapKey: "esri_dark",
+  showRaster: false,
   showVectors: true,
   showLandmarks: true,
   rasterOpacity: 0.75,
@@ -135,13 +151,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // Initialize Leaflet Map
 function initMap() {
-  // Center of India
+  // Frame India, not the whole subcontinent
   map = L.map("map", {
     center: [22.5937, 78.9629],
     zoom: 5,
     minZoom: 4,
     maxZoom: 16,
     zoomControl: false,
+    noWrap: true,
+    worldCopyJump: false,
+    maxBounds: [[2.5, 64.0], [40.5, 101.5]],
+    maxBoundsViscosity: 0.85,
   });
 
   L.control.zoom({ position: "topright" }).addTo(map);
@@ -149,6 +169,8 @@ function initMap() {
   setBasemap(state.basemapKey);
 
   landmarksLayer = L.layerGroup().addTo(map);
+
+  map.fitBounds([[6.6, 68.0], [37.2, 97.4]], { padding: [0, 0], animate: false });
 
   map.on("zoomend", () => {
     if (state.tierSelection === "auto") {
@@ -158,9 +180,16 @@ function initMap() {
 }
 
 // Basemap Management
+let currentBasemapLabels = null;
+
 function setBasemap(providerKey) {
   if (currentBasemapLayer) {
     map.removeLayer(currentBasemapLayer);
+    currentBasemapLayer = null;
+  }
+  if (currentBasemapLabels) {
+    map.removeLayer(currentBasemapLabels);
+    currentBasemapLabels = null;
   }
   let provider = BASEMAP_PROVIDERS[providerKey] || BASEMAP_PROVIDERS.osm_standard;
   let url = typeof provider.getUrl === "function" ? provider.getUrl() : provider.url;
@@ -179,17 +208,24 @@ function setBasemap(providerKey) {
   }
 
   if (!url) {
-    console.warn(`Basemap ${providerKey} requires an API key. Falling back to OSM Standard.`);
-    provider = BASEMAP_PROVIDERS.osm_standard;
+    console.warn(`Basemap ${providerKey} requires an API key. Falling back to the keyless dark canvas.`);
+    provider = BASEMAP_PROVIDERS.esri_dark;
     url = provider.url;
     const select = document.getElementById("basemap-select");
-    if (select) select.value = "osm_standard";
-    state.basemapKey = "osm_standard";
+    if (select) select.value = "esri_dark";
+    state.basemapKey = "esri_dark";
   } else {
     state.basemapKey = providerKey;
   }
 
   currentBasemapLayer = L.tileLayer(url, provider.options).addTo(map);
+
+  // Place labels ride above the base canvas but below the choropleth
+  if (provider.labels) {
+    currentBasemapLabels = L.tileLayer(provider.labels.url, provider.labels.options);
+    currentBasemapLabels.addTo(map);
+    if (currentBasemapLabels.bringToFront) currentBasemapLabels.bringToFront();
+  }
 }
 
 // Load Datasets
@@ -233,6 +269,7 @@ async function loadDatasets() {
     buildSearchIndex();
     renderHotspotsList();
     renderOverviewStats();
+    applyNationalMetricCopy();
   } catch (err) {
     console.error("Failed loading analytical datasets:", err);
   }
@@ -386,60 +423,70 @@ function showCityPendingNotice(city) {
 }
 
 // Dynamic Feature Styling
+const VEG_RAMP = [0, 1, 2, 3, 4, 5].map((i) => token(`--veg-${i}`, "#2f4a38"));
+const CHANGE_RAMP = {
+  lossStrong: token("--chg-loss-2", "#c25a24"),
+  loss: token("--chg-loss-1", "#8f3d19"),
+  neutral: token("--chg-0", "#2b323b"),
+  gain: token("--chg-gain-1", "#2f7d52"),
+  gainStrong: token("--chg-gain-2", "#46a874"),
+};
+
 function getFeatureStyle(feature, type) {
   const p = feature.properties;
   const isChange = state.mode === "change";
+  const isState = type === "state";
 
   // If feature has no real computed data yet, render as subtle uncomputed outline
   if (p.has_real_data === false || p[`green_pct_${state.year}`] === undefined) {
     return {
       fillColor: "#161b22",
-      weight: type === "state" ? 1.5 : 0.6,
-      opacity: 0.6,
-      color: type === "state" ? "#484f58" : "#30363d",
-      fillOpacity: 0.15,
+      weight: isState ? 0.9 : 0.4,
+      opacity: 0.5,
+      color: "#39414d",
+      fillOpacity: 0.25,
     };
   }
 
   if (isChange) {
     const delta = p.net_change_pp || p.net_change_pct || 0;
-    let col = "#484f58";
-    if (delta <= -10.0) col = "#7a2a0a";
-    else if (delta < -2.0) col = PALETTE.copperBase;
-    else if (delta >= 10.0) col = PALETTE.forestDense;
-    else if (delta > 2.0) col = PALETTE.forestModerate;
+    let col = CHANGE_RAMP.neutral;
+    if (delta <= -10.0) col = CHANGE_RAMP.lossStrong;
+    else if (delta < -2.0) col = CHANGE_RAMP.loss;
+    else if (delta >= 10.0) col = CHANGE_RAMP.gainStrong;
+    else if (delta > 2.0) col = CHANGE_RAMP.gain;
     return {
       fillColor: col,
-      weight: type === "state" ? 1.5 : 0.8,
-      opacity: 0.8,
-      color: "#21262d",
-      fillOpacity: 0.55,
+      weight: isState ? 0.9 : 0.45,
+      opacity: 0.85,
+      color: "#0f1319",
+      fillOpacity: 0.78,
     };
   }
 
-  // Annual Green Cover
+  // Annual green cover
   const pct = p[`green_pct_${state.year}`] || 0;
-  let col = "#21262d";
-  if (pct >= 50.0) col = PALETTE.forestDense;
-  else if (pct >= 35.0) col = PALETTE.forestModerate;
-  else if (pct >= 20.0) col = PALETTE.forestLight;
-  else if (pct >= 10.0) col = "#d29922";
-  else col = PALETTE.copperBase;
+  let idx = 0;
+  if (pct >= 50.0) idx = 5;
+  else if (pct >= 35.0) idx = 4;
+  else if (pct >= 20.0) idx = 3;
+  else if (pct >= 10.0) idx = 2;
+  else if (pct >= 5.0) idx = 1;
 
   return {
-    fillColor: col,
-    weight: type === "state" ? 1.5 : (type === "district" ? 0.8 : 0.4),
-    opacity: 0.7,
-    color: type === "state" ? "#e6edf3" : "#30363d",
-    fillOpacity: 0.55,
+    fillColor: VEG_RAMP[idx],
+    weight: isState ? 0.9 : 0.45,
+    opacity: 0.85,
+    color: "#0f1319",
+    fillOpacity: 0.82,
   };
 }
 
 function highlightFeature(layer) {
   layer.setStyle({
-    weight: 2.5,
-    color: "#ffffff",
-    fillOpacity: 0.8,
+    weight: 1.8,
+    color: "#e88d5d",
+    fillOpacity: 0.95,
   });
   if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
     layer.bringToFront();
@@ -471,7 +518,7 @@ function selectFeature(feature, type, updateChart = true) {
   const isCity = type === "grid" || type === "city";
   const metricName = isCity
     ? ((state.cityProvenance && state.cityProvenance.metric_definition) || "Green cover (Landsat 30 m, Jan-Mar NDVI)")
-    : ((state.statesProvenance && state.statesProvenance.metric_definition) || "Perennial green cover (MODIS 250 m proxy)");
+    : ((state.statesProvenance && state.statesProvenance.metric_definition) || "Pre-monsoon vegetation greenness (MODIS 250 m)");
 
   if (panelTitle) {
     if (type === "state") {
@@ -575,9 +622,9 @@ function updateTierShield(tier, zoom) {
     const prov = state.statesProvenance;
     const srcLabel = prov && prov.source ? `Source: ${prov.source}` : "Source: Microsoft Planetary Computer (MODIS 250m)";
     badge.innerText = "TIER 1: NATIONAL";
-    desc.innerText = `MODIS 250m Pre-Monsoon Proxy | ${srcLabel}`;
+    desc.innerText = `MODIS 250 m, pre-monsoon greenness | ${srcLabel}`;
     if (timelineMetric) {
-      const metricDef = (prov && prov.metric_definition) || "Perennial green cover (MODIS 250 m proxy)";
+      const metricDef = (prov && prov.metric_definition) || "Pre-monsoon vegetation greenness (MODIS 250 m)";
       timelineMetric.innerText = `National Metric: ${metricDef}`;
     }
   } else if (tier === "district") {
@@ -586,7 +633,7 @@ function updateTierShield(tier, zoom) {
     badge.innerText = "TIER 2: DISTRICT";
     desc.innerText = `Zonal Aggregation (594 Units) | ${srcLabel}`;
     if (timelineMetric) {
-      const metricDef = (prov && prov.metric_definition) || "Perennial green cover (MODIS 250 m proxy)";
+      const metricDef = (prov && prov.metric_definition) || "Pre-monsoon vegetation greenness (MODIS 250 m)";
       timelineMetric.innerText = `District Metric: ${metricDef}`;
     }
   } else {
@@ -682,34 +729,54 @@ function renderLegend() {
   const tier = state.tierSelection === "auto" ? state.activeTier : state.tierSelection;
   const isCity = tier === "city";
 
+  const row = (color, text) =>
+    `<div class="legend-row"><span class="legend-chip" style="background:${color}"></span><span>${text}</span></div>`;
+
   if (state.mode === "change") {
-    const unitLabel = isCity ? "Canopy Shift" : "Perennial Shift";
+    const noun = isCity ? "canopy" : "greenness";
     container.innerHTML = `
-      <div style="font-size:10px; color:var(--text-muted); margin-bottom:4px; font-weight:600;">Net Shift (2000 &rarr; 2025) in pp</div>
-      <div class="legend-row"><span class="legend-chip" style="background:#1b4d3e"></span><span>High ${unitLabel} (&ge; +10 pp)</span></div>
-      <div class="legend-row"><span class="legend-chip" style="background:#2e7d32"></span><span>Moderate ${unitLabel} Gain (+2 to +10 pp)</span></div>
-      <div class="legend-row"><span class="legend-chip" style="background:#484f58"></span><span>Stable Vegetative Balance (&plusmn;2 pp)</span></div>
-      <div class="legend-row"><span class="legend-chip" style="background:#c45d2c"></span><span>Moderate ${unitLabel} Loss (-2 to -10 pp)</span></div>
-      <div class="legend-row"><span class="legend-chip" style="background:#7a2a0a"></span><span>Severe Hotspot Loss (&le; -10 pp)</span></div>
+      <div class="legend-ramp is-change" aria-hidden="true"></div>
+      ${row("var(--chg-gain-2)", `Gain of ${noun}, 10 pp or more`)}
+      ${row("var(--chg-gain-1)", "Gain, 2 to 10 pp")}
+      ${row("var(--chg-0)", "Broadly unchanged, within 2 pp")}
+      ${row("var(--chg-loss-1)", "Loss, 2 to 10 pp")}
+      ${row("var(--chg-loss-2)", "Loss of 10 pp or more")}
+      <div class="legend-note">Net shift 2000 to 2025, in percentage points of the affected area.</div>
     `;
   } else {
     const metricTitle = isCity
-      ? "Green cover (Landsat 30 m, Jan-Mar NDVI)"
-      : "Perennial green cover (MODIS 250 m proxy)";
-    const denseLabel = isCity ? "Dense Tree Canopy (&ge; 50%)" : "High Perennial Cover (&ge; 50%)";
-    const modLabel = isCity ? "Moderate Canopy (35% - 50%)" : "Moderate Perennial (35% - 50%)";
-    const sparseLabel = isCity ? "Sparse Foliage (20% - 35%)" : "Sparse Foliage (20% - 35%)";
-    const marginalLabel = isCity ? "Marginal Green (10% - 20%)" : "Marginal Green (10% - 20%)";
-    const nonVegLabel = isCity ? "Built-up / Non-Vegetated (&lt; 10%)" : "Barren / Non-Perennial (&lt; 10%)";
+      ? "Green cover, Landsat 30 m, Jan to Mar NDVI"
+      : "Pre-monsoon vegetation greenness, MODIS 250 m";
+    const labels = isCity
+      ? ["Dense canopy", "Moderate canopy", "Sparse foliage", "Marginal green", "Scattered green", "Built-up or bare"]
+      : ["Very high greenness", "High greenness", "Moderate greenness", "Low greenness", "Sparse greenness", "Bare or built-up"];
+    const ranges = ["50% and above", "35 to 50%", "20 to 35%", "10 to 20%", "5 to 10%", "below 5%"];
+    const colors = ["var(--veg-5)", "var(--veg-4)", "var(--veg-3)", "var(--veg-2)", "var(--veg-1)", "var(--veg-0)"];
 
     container.innerHTML = `
-      <div style="font-size:10px; color:var(--text-muted); margin-bottom:4px; font-weight:600;">${metricTitle}</div>
-      <div class="legend-row"><span class="legend-chip" style="background:#1b4d3e"></span><span>${denseLabel}</span></div>
-      <div class="legend-row"><span class="legend-chip" style="background:#2e7d32"></span><span>${modLabel}</span></div>
-      <div class="legend-row"><span class="legend-chip" style="background:#66bb6a"></span><span>${sparseLabel}</span></div>
-      <div class="legend-row"><span class="legend-chip" style="background:#d29922"></span><span>${marginalLabel}</span></div>
-      <div class="legend-row"><span class="legend-chip" style="background:#c45d2c"></span><span>${nonVegLabel}</span></div>
+      <div class="legend-ramp" aria-hidden="true"></div>
+      <div class="legend-note" style="margin: 0 0 var(--space-2);">${metricTitle}</div>
+      ${labels.map((l, i) => row(colors[i], `${l}, ${ranges[i]}`)).join("")}
     `;
+  }
+}
+
+// Metric copy comes from the provenance manifest, never from hardcoded strings.
+function applyNationalMetricCopy() {
+  const label = (nationalStats && nationalStats.metric_label) || "Pre-monsoon vegetation greenness (MODIS 250 m)";
+  const caveat = (nationalStats && nationalStats.metric_caveat) || "";
+
+  const tag = document.getElementById("national-metric-tag");
+  if (tag) tag.innerText = `National metric: ${label}`;
+
+  const note = document.getElementById("national-metric-note");
+  if (note) {
+    note.setAttribute(
+      "data-tooltip",
+      caveat
+        ? `${label}. ${caveat}`
+        : `${label}. Measured in the pre-monsoon window so winter crops in the north do not read as tree cover.`
+    );
   }
 }
 
@@ -727,11 +794,19 @@ function renderOverviewStats() {
     else panelTitle.innerText = "India National Overview";
   }
 
-  const metricName = tier === "city"
-    ? ((state.cityProvenance && state.cityProvenance.metric_definition) || "Green cover (Landsat 30 m, Jan-Mar NDVI)")
-    : ((state.statesProvenance && state.statesProvenance.metric_definition) || "Perennial green cover (MODIS 250 m proxy)");
+  const cityLabel = (state.cityProvenance && (state.cityProvenance.metric_label || state.cityProvenance.metric_definition))
+    || "Green cover (Landsat 30 m, Jan to Mar NDVI)";
+  const natLabel = (state.statesProvenance && (state.statesProvenance.metric_label || state.statesProvenance.metric_definition))
+    || "Pre-monsoon vegetation greenness (MODIS 250 m)";
+  const metricName = tier === "city" ? cityLabel : natLabel;
 
-  document.getElementById("entity-tier-badge").innerText = tier === "city" ? "Tier 3: City (Landsat 30m)" : "Tier 1: National (MODIS 250m)";
+  const tierBadgeMap = {
+    city: "Tier 3: City (Landsat 30 m)",
+    district: "Tier 2: District (MODIS 250 m)",
+    national: "Tier 1: National (MODIS 250 m)",
+    states: "Tier 1: National (MODIS 250 m)",
+  };
+  document.getElementById("entity-tier-badge").innerText = tierBadgeMap[tier] || tierBadgeMap.national;
   document.getElementById("entity-name").innerText = tier === "city" ? "Bengaluru Urban Region" : "India (All States & UTs)";
   document.getElementById("entity-subtitle").innerText = tier === "city"
     ? "Total Grid Area: 1,078 km² | 1,120 Metric Cells"
@@ -769,6 +844,9 @@ function renderNationalTimelineChart() {
   const ctx = document.getElementById("timeline-chart");
   if (!ctx || !nationalStats) return;
 
+  const tier = state.tierSelection === "auto" ? state.activeTier : state.tierSelection;
+  const isCity = tier === "city";
+
   const labels = ["2000", "2010", "2020", "2025", "2030 (P)", "2035 (P)"];
   const historical = state.years.map((y) => nationalStats.data[String(y)].green_percentage);
 
@@ -781,34 +859,60 @@ function renderNationalTimelineChart() {
   const histSeries = [...historical, null, null];
   const projSeries = [null, null, null, lastVal, p2030, p2035];
 
+  // Threshold-free cross-check. Green share depends on a hard NDVI cut, so the
+  // median NDVI is plotted beside it: if the two disagree, the share move is partly a cut artifact.
+  const ndvi = isCity
+    ? null
+    : state.years.map((y) => {
+        const v = nationalStats.data[String(y)];
+        return v && typeof v.median_ndvi === "number" ? v.median_ndvi : null;
+      });
+  const hasNdvi = !!ndvi && ndvi.every((v) => v !== null);
+
+  const datasets = [
+    {
+      label: isCity ? "Observed canopy share" : "Observed greenness share (%)",
+      data: histSeries,
+      borderColor: PALETTE.forestDense,
+      backgroundColor: PALETTE.forestDense,
+      borderWidth: 2,
+      pointRadius: 4,
+      tension: 0.1,
+    },
+    {
+      label: "Projected trend",
+      data: projSeries,
+      borderColor: PALETTE.copperBase,
+      backgroundColor: PALETTE.copperBase,
+      borderDash: [4, 4],
+      borderWidth: 2,
+      pointRadius: 4,
+      spanGaps: true, // Guarantees connection to last historical point
+      tension: 0.1,
+    },
+  ];
+
+  if (hasNdvi) {
+    datasets.push({
+      label: "Median NDVI (right axis)",
+      data: [...ndvi, null, null],
+      borderColor: PALETTE.textMuted,
+      backgroundColor: PALETTE.textMuted,
+      borderWidth: 1.5,
+      borderDash: [2, 3],
+      pointRadius: 3,
+      tension: 0.1,
+      yAxisID: "y1",
+    });
+  }
+
   if (timelineChart) timelineChart.destroy();
 
   timelineChart = new Chart(ctx, {
     type: "line",
     data: {
       labels: labels,
-      datasets: [
-        {
-          label: "Observed (Perennial Proxy)",
-          data: histSeries,
-          borderColor: PALETTE.forestDense,
-          backgroundColor: PALETTE.forestDense,
-          borderWidth: 2,
-          pointRadius: 4,
-          tension: 0.1,
-        },
-        {
-          label: "Projected Trend",
-          data: projSeries,
-          borderColor: PALETTE.copperBase,
-          backgroundColor: PALETTE.copperBase,
-          borderDash: [4, 4],
-          borderWidth: 2,
-          pointRadius: 4,
-          spanGaps: true, // Guarantees connection to last historical point
-          tension: 0.1,
-        },
-      ],
+      datasets: datasets,
     },
     options: {
       responsive: true,
@@ -821,6 +925,14 @@ function renderNationalTimelineChart() {
       scales: {
         x: { ticks: { color: PALETTE.textSecondary, font: { size: 9 } }, grid: { color: PALETTE.borderSubtle } },
         y: { ticks: { color: PALETTE.textSecondary, font: { size: 9 } }, grid: { color: PALETTE.borderSubtle } },
+        y1: hasNdvi
+          ? {
+              position: "right",
+              display: true,
+              ticks: { color: PALETTE.textMuted, font: { size: 9 } },
+              grid: { display: false },
+            }
+          : undefined,
       },
     },
   });
@@ -886,85 +998,99 @@ function renderSelectedTimelineChart(properties) {
 }
 
 // Hotspots List Renderer
+// Ranked by absolute green area lost (km2), which is threshold-stable, rather than
+// by percentage points, which explode on small units near the NDVI cut.
+const HOTSPOT_MIN_AREA_KM2 = 500;
+
+function _districtHotspots() {
+  if (!districtsData || !districtsData.features) return [];
+  return districtsData.features
+    .filter((f) => {
+      const p = f.properties || {};
+      return p.has_real_data !== false
+        && typeof p.net_change_km2 === "number"
+        && p.net_change_km2 < 0
+        && (p.area_km2 || 0) >= HOTSPOT_MIN_AREA_KM2;
+    })
+    .sort((a, b) => a.properties.net_change_km2 - b.properties.net_change_km2)
+    .slice(0, 5)
+    .map((f, i) => ({
+      rank: i + 1,
+      label: `${f.properties.name}, ${f.properties.state_name || ""}`.replace(/, $/, ""),
+      value: `${Math.abs(f.properties.net_change_km2).toFixed(0)} km2`,
+      detail: `${Number(f.properties.net_change_pp).toFixed(1)} pp`,
+      feature: f,
+    }));
+}
+
+function _cityHotspots() {
+  if (!lossHotspots) return [];
+  const raw = Array.isArray(lossHotspots) ? lossHotspots : (lossHotspots.hotspots || []);
+  return raw
+    .filter((h) => {
+      const v = h.net_change_pp !== undefined ? h.net_change_pp : h.net_change_pct;
+      return typeof v === "number" && v < 0;
+    })
+    .sort((a, b) => {
+      const va = a.net_change_pp !== undefined ? a.net_change_pp : a.net_change_pct;
+      const vb = b.net_change_pp !== undefined ? b.net_change_pp : b.net_change_pct;
+      return va - vb;
+    })
+    .slice(0, 5)
+    .map((h, i) => ({
+      rank: i + 1,
+      label: h.zone_label || h.label || h.zone_id || `Cell ${i + 1}`,
+      value: `${Number(h.net_change_pp !== undefined ? h.net_change_pp : h.net_change_pct).toFixed(1)} pp`,
+      detail: "",
+      zone_id: h.zone_id,
+      centroid_lat: h.centroid_lat,
+      centroid_lon: h.centroid_lon,
+    }));
+}
+
 function renderHotspotsList() {
   const container = document.getElementById("hotspots-list");
   if (!container) return;
   container.innerHTML = "";
 
   const tier = state.tierSelection === "auto" ? state.activeTier : state.tierSelection;
+  const isCity = tier === "city";
+  const list = isCity ? _cityHotspots() : _districtHotspots();
 
-  let list = [];
-  if (tier === "city") {
-    if (lossHotspots) {
-      const raw = Array.isArray(lossHotspots) ? lossHotspots : (lossHotspots.hotspots || []);
-      list = raw.slice(0, 5).map((item, i) => ({
-        rank: item.rank || (i + 1),
-        zone_label: item.zone_label || item.label || item.zone_id || `Cell #${i + 1}`,
-        net_change_pp: item.net_change_pp !== undefined ? item.net_change_pp : (item.net_change_pct !== undefined ? item.net_change_pct : 0),
-        centroid_lat: item.centroid_lat,
-        centroid_lon: item.centroid_lon,
-        zone_id: item.zone_id,
-      }));
-    }
-  } else if (tier === "district" && districtsData && districtsData.features) {
-    // Dynamically rank top loss districts if real computed data exists
-    const computedDistricts = districtsData.features.filter((f) => f.properties && (f.properties.net_change_pp !== undefined || f.properties.net_change_pct !== undefined));
-    computedDistricts.sort((a, b) => {
-      const va = a.properties.net_change_pp !== undefined ? a.properties.net_change_pp : a.properties.net_change_pct;
-      const vb = b.properties.net_change_pp !== undefined ? b.properties.net_change_pp : b.properties.net_change_pct;
-      return va - vb;
-    });
-    list = computedDistricts.slice(0, 5).map((d, i) => {
-      const val = d.properties.net_change_pp !== undefined ? d.properties.net_change_pp : d.properties.net_change_pct;
-      return {
-        rank: i + 1,
-        zone_label: `${d.properties.name}, ${d.properties.state_name || ""}`,
-        net_change_pp: typeof val === "number" ? val.toFixed(2) : val,
-        feature: d,
-      };
-    });
-  } else if (tier === "national" && statesData && statesData.features) {
-    const computedStates = statesData.features.filter((f) => f.properties && (f.properties.net_change_pp !== undefined || f.properties.net_change_pct !== undefined));
-    computedStates.sort((a, b) => {
-      const va = a.properties.net_change_pp !== undefined ? a.properties.net_change_pp : a.properties.net_change_pct;
-      const vb = b.properties.net_change_pp !== undefined ? b.properties.net_change_pp : b.properties.net_change_pct;
-      return va - vb;
-    });
-    list = computedStates.slice(0, 5).map((s, i) => {
-      const val = s.properties.net_change_pp !== undefined ? s.properties.net_change_pp : s.properties.net_change_pct;
-      return {
-        rank: i + 1,
-        zone_label: s.properties.name,
-        net_change_pp: typeof val === "number" ? val.toFixed(2) : val,
-        feature: s,
-      };
-    });
+  const title = document.getElementById("hotspots-title");
+  if (title) title.innerText = isCity ? "Largest 1 km cell losses" : "Largest district losses";
+
+  const note = document.getElementById("hotspots-note");
+  if (note) {
+    note.innerText = isCity
+      ? "Ranked by percentage-point decline, Bengaluru 30 m Landsat, 2000 to 2025."
+      : `Ranked by square kilometres lost, 2000 to 2025. Units under ${HOTSPOT_MIN_AREA_KM2} km2 excluded.`;
   }
 
   if (list.length === 0) {
-    container.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:6px 0;">No loss hotspots recorded at current tier.</div>';
+    container.innerHTML = '<div class="hotspots-empty">No real loss data at this level yet.</div>';
     return;
   }
 
-  list.slice(0, 5).forEach((h) => {
-    const item = document.createElement("div");
+  list.forEach((h) => {
+    const item = document.createElement("button");
+    item.type = "button";
     item.className = "hotspot-item";
+    item.setAttribute("role", "listitem");
     item.innerHTML = `
-      <span class="hotspot-title">#${h.rank} ${h.zone_label}</span>
-      <span class="hotspot-val">${h.net_change_pp} pp</span>
+      <span class="hotspot-title">#${h.rank} ${h.label}</span>
+      <span class="hotspot-val">${h.value}${h.detail ? `<em>${h.detail}</em>` : ""}</span>
     `;
     item.addEventListener("click", () => {
-      if (h.centroid_lat && h.centroid_lon) {
+      if (h.zone_id && h.centroid_lat && h.centroid_lon) {
         map.flyTo([h.centroid_lat, h.centroid_lon], 13);
-        if (h.zone_id && cityGridData && cityGridData.features) {
+        if (cityGridData && cityGridData.features) {
           const match = cityGridData.features.find((f) => f.properties && f.properties.zone_id === h.zone_id);
-          if (match) {
-            selectFeature(match, "grid");
-          }
+          if (match) selectFeature(match, "grid");
         }
       } else if (h.feature) {
-        map.fitBounds(L.geoJSON(h.feature).getBounds());
-        selectFeature(h.feature, tier === "national" ? "state" : "district");
+        map.fitBounds(L.geoJSON(h.feature).getBounds(), { padding: [40, 40] });
+        selectFeature(h.feature, isCity ? "grid" : "district");
       }
     });
     container.appendChild(item);

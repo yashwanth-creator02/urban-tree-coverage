@@ -17,6 +17,7 @@ import math
 import os
 import re
 import time
+import yaml
 import numpy as np
 import geopandas as gpd
 from PIL import Image
@@ -38,6 +39,24 @@ RES_DEG = 0.015  # ~1.6km resolution, optimal for national 594-district stats an
 GRID_WIDTH = int(round((INDIA_BBOX[2] - INDIA_BBOX[0]) / RES_DEG))
 GRID_HEIGHT = int(round((INDIA_BBOX[3] - INDIA_BBOX[1]) / RES_DEG))
 GRID_TRANSFORM = from_bounds(INDIA_BBOX[0], INDIA_BBOX[1], INDIA_BBOX[2], INDIA_BBOX[3], GRID_WIDTH, GRID_HEIGHT)
+
+
+def _load_green_threshold(default: float = 0.40) -> float:
+    """Green threshold comes from the config option slot, never a bare literal."""
+    cfg_path = Path(__file__).parent.parent / "config" / "config.yaml"
+    try:
+        cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8")) or {}
+        value = cfg.get("green_threshold", default)
+        return float(value if isinstance(value, (int, float)) else default)
+    except Exception:
+        return default
+
+
+GREEN_THRESHOLD = _load_green_threshold()
+
+# Bump when the sampling, masking or compositing method changes, so stale
+# cached rasters cannot leak into a new set of outputs.
+CACHE_VERSION = "v2.3-avg-nodvi"
 
 
 def deg2num(lat_deg: float, lon_deg: float, zoom: int) -> tuple:
@@ -102,17 +121,27 @@ def process_national_modis(years=[2000, 2010, 2020, 2025]):
 
     national_rasters = {}
     total_download_bytes = 0
+    scene_counts = {}
 
     for yr in years:
         print(f"\n[Step 2] Processing Year {yr} (Pre-Monsoon Summer: Apr 15 - May 31)...")
         mosaic_cache = cache_dir / f"india_modis_{yr}.npz"
 
         if mosaic_cache.exists():
-            print(f"  -> Loading cached national mosaic from: {mosaic_cache}")
+            cached_version = None
             data = np.load(mosaic_cache)
-            national_ndvi = data["ndvi"]
-            national_rasters[yr] = national_ndvi
-            continue
+            if "cache_version" in data.files:
+                cached_version = str(data["cache_version"])
+            if cached_version != CACHE_VERSION:
+                # A method change (resampling, masking, threshold source) must not
+                # silently reuse rasters built the old way.
+                print(f"  -> Cache version {cached_version} != {CACHE_VERSION}; recompositing")
+            else:
+                print(f"  -> Loading cached national mosaic from: {mosaic_cache}")
+                national_ndvi = data["ndvi"]
+                national_rasters[yr] = national_ndvi
+                scene_counts[yr] = int(data["scenes_count"]) if "scenes_count" in data.files else 0
+                continue
 
         # Query MODIS STAC items
         date_range = f"{yr}-04-15/{yr}-05-31"
@@ -136,59 +165,82 @@ def process_national_modis(years=[2000, 2010, 2020, 2025]):
 
         # Accumulate NDVI across tiles
         national_ndvi = np.full((GRID_HEIGHT, GRID_WIDTH), np.nan, dtype=np.float32)
+        scenes_used = 0
 
         for tid, it_list in sorted(tile_items.items()):
-            # Use the middle of the pre-monsoon window or best available item
-            it = it_list[len(it_list) // 2]
-            ndvi_asset = it.assets.get("250m_16_days_NDVI")
-            qa_asset = it.assets.get("250m_16_days_pixel_reliability")
-            if not ndvi_asset:
+            # Median composite across EVERY 16-day composite in the window.
+            # A single arbitrary scene (the previous behaviour) made the annual
+            # metric depend on which dekad happened to be sampled, producing a
+            # spurious step between years. Median over the window is the
+            # documented `composite: median` option.
+            stack = []
+            src_transform = None
+            src_crs = None
+            for it in sorted(it_list, key=lambda x: x.datetime or x.id):
+                ndvi_asset = it.assets.get("250m_16_days_NDVI")
+                qa_asset = it.assets.get("250m_16_days_pixel_reliability")
+                if not ndvi_asset:
+                    continue
+                try:
+                    with rasterio.open(ndvi_asset.href) as src:
+                        # Read overview 8 (~2km) to stay within compute safety caps.
+                        # shortcut: average resampling approximates the true fractional
+                        # coverage; upgrade to windowed full-res reads if the 250m detail
+                        # ever matters for the national product.
+                        ov_shape = (src.height // 8, src.width // 8)
+                        ndvi_raw = src.read(1, out_shape=ov_shape, resampling=Resampling.average)
+                        src_transform = src.transform * src.transform.scale(
+                            src.width / ov_shape[1],
+                            src.height / ov_shape[0],
+                        )
+                        src_crs = src.crs
+
+                    valid_mask = (ndvi_raw > -2000) & (ndvi_raw <= 10000)
+                    if qa_asset:
+                        try:
+                            with rasterio.open(qa_asset.href) as qa_src:
+                                # QA codes are categorical: never average them
+                                qa_raw = qa_src.read(1, out_shape=ov_shape, resampling=Resampling.nearest)
+                                valid_mask = valid_mask & (qa_raw <= 1)
+                        except Exception:
+                            pass
+
+                    stack.append(
+                        np.where(valid_mask, ndvi_raw.astype(np.float32) * 0.0001, np.nan)
+                    )
+                    total_download_bytes += ov_shape[0] * ov_shape[1] * 2
+                except Exception as e:
+                    print(f"     [Warning] Failed to read {it.id}: {e}")
+
+            if not stack:
                 continue
 
-            try:
-                with rasterio.open(ndvi_asset.href) as src:
-                    # Read overview 8 (~2km) to stay within compute safety caps
-                    ov_shape = (src.height // 8, src.width // 8)
-                    ndvi_raw = src.read(1, out_shape=ov_shape)
-                    src_transform = src.transform * src.transform.scale(
-                        src.width / ov_shape[1],
-                        src.height / ov_shape[0],
-                    )
-                    src_crs = src.crs
+            with np.errstate(all="ignore"):
+                if len(stack) == 1:
+                    tile_ndvi = stack[0]
+                else:
+                    tile_ndvi = np.nanmedian(np.stack(stack, axis=0), axis=0)
+            scenes_used += len(stack)
 
-                # Quality filter with reliability mask if available
-                valid_mask = (ndvi_raw > -2000) & (ndvi_raw <= 10000)
-                if qa_asset:
-                    try:
-                        with rasterio.open(qa_asset.href) as qa_src:
-                            qa_raw = qa_src.read(1, out_shape=ov_shape)
-                            valid_mask = valid_mask & (qa_raw <= 1)
-                    except Exception:
-                        pass
+            # Reproject the composite onto the target India WGS84 grid
+            tile_reprojected = np.full((GRID_HEIGHT, GRID_WIDTH), np.nan, dtype=np.float32)
+            reproject(
+                source=tile_ndvi,
+                destination=tile_reprojected,
+                src_transform=src_transform,
+                src_crs=src_crs,
+                dst_transform=GRID_TRANSFORM,
+                dst_crs="EPSG:4326",
+                resampling=Resampling.bilinear,
+                src_nodata=np.nan,
+                dst_nodata=np.nan,
+            )
 
-                ndvi_float = np.where(valid_mask, ndvi_raw.astype(np.float32) * 0.0001, np.nan)
+            # Merge tile into national mosaic (where not nan)
+            has_val = ~np.isnan(tile_reprojected)
+            national_ndvi[has_val] = tile_reprojected[has_val]
 
-                # Reproject tile onto target India WGS84 grid
-                tile_reprojected = np.full((GRID_HEIGHT, GRID_WIDTH), np.nan, dtype=np.float32)
-                reproject(
-                    source=ndvi_float,
-                    destination=tile_reprojected,
-                    src_transform=src_transform,
-                    src_crs=src_crs,
-                    dst_transform=GRID_TRANSFORM,
-                    dst_crs="EPSG:4326",
-                    resampling=Resampling.bilinear,
-                    src_nodata=np.nan,
-                    dst_nodata=np.nan,
-                )
-
-                # Merge tile into national mosaic (where not nan)
-                has_val = ~np.isnan(tile_reprojected)
-                national_ndvi[has_val] = tile_reprojected[has_val]
-                total_download_bytes += ov_shape[0] * ov_shape[1] * 2
-
-            except Exception as e:
-                print(f"     [Warning] Failed to read tile {tid}: {e}")
+        print(f"  -> Composited {scenes_used} 16-day scenes (pixel-wise median)")
 
         # Mask strictly to sovereign India territory (NO spillover into neighbours)
         national_ndvi[india_mask == 0] = np.nan
@@ -200,10 +252,12 @@ def process_national_modis(years=[2000, 2010, 2020, 2025]):
             year=yr,
             transform=np.array([GRID_TRANSFORM.a, GRID_TRANSFORM.b, GRID_TRANSFORM.c, GRID_TRANSFORM.d, GRID_TRANSFORM.e, GRID_TRANSFORM.f]),
             shape=np.array(national_ndvi.shape),
-            scenes_count=len(items),
+            scenes_count=scenes_used,
+            cache_version=np.array(CACHE_VERSION),
         )
         print(f"  -> Saved real national mosaic to: {mosaic_cache}")
         national_rasters[yr] = national_ndvi
+        scene_counts[yr] = scenes_used
 
     print(f"\nTotal real satellite data transferred: {total_download_bytes / (1024 * 1024):.2f} MB")
 
@@ -220,6 +274,45 @@ def process_national_modis(years=[2000, 2010, 2020, 2025]):
     }
 
     # Compute district-level metrics from real rasters
+    def _fill_zone_stats(gdf, idx, pixels, tot_cells, area_km2, rasters, year_list):
+        """Zonal stats for one admin polygon over the real national rasters.
+
+        green_pct is computed over OBSERVED pixels only (cloud/QA masked), so
+        green_km2 multiplies by the observed area, not the full polygon area.
+        Mixing the two inflated green area by up to 2.5x in cloudy pre-monsoon
+        states, which is the same class of bug as the v1 0.097 km2 cell.
+        ndvi_median is threshold-free, so a jump can be separated from a
+        threshold crossing.
+        """
+        for yr in year_list:
+            arr = rasters[yr]
+            vals = arr[pixels]
+            valid = vals[~np.isnan(vals)]
+            if len(valid) == 0:
+                gdf.loc[idx, f"green_pct_{yr}"] = 0.0
+                gdf.loc[idx, f"green_km2_{yr}"] = 0.0
+                gdf.loc[idx, f"observed_pct_{yr}"] = 0.0
+                gdf.loc[idx, f"ndvi_median_{yr}"] = None
+                continue
+            obs_frac = len(valid) / tot_cells
+            obs_area = area_km2 * obs_frac
+            p_green = float((valid >= GREEN_THRESHOLD).mean() * 100.0)
+            gdf.loc[idx, f"green_pct_{yr}"] = round(p_green, 2)
+            gdf.loc[idx, f"green_km2_{yr}"] = round(p_green / 100.0 * obs_area, 1)
+            gdf.loc[idx, f"observed_pct_{yr}"] = round(obs_frac * 100.0, 1)
+            gdf.loc[idx, f"ndvi_median_{yr}"] = round(float(np.median(valid)), 4)
+            if yr == year_list[-1]:
+                gdf.loc[idx, "valid_pixel_fraction"] = round(obs_frac, 3)
+
+        first, last = year_list[0], year_list[-1]
+        gdf.loc[idx, "net_change_pp"] = round(
+            gdf.loc[idx, f"green_pct_{last}"] - gdf.loc[idx, f"green_pct_{first}"], 2
+        )
+        gdf.loc[idx, "net_change_km2"] = round(
+            gdf.loc[idx, f"green_km2_{last}"] - gdf.loc[idx, f"green_km2_{first}"], 1
+        )
+        gdf.loc[idx, "has_real_data"] = True
+
     for idx, row in gdf_districts.iterrows():
         geom = row["geometry"]
         dist_area = float(row["area_km2"])
@@ -237,29 +330,7 @@ def process_national_modis(years=[2000, 2010, 2020, 2025]):
         if tot_cells == 0:
             continue
 
-        for yr in years:
-            arr = national_rasters[yr]
-            vals = arr[d_pixels]
-            valid = vals[~np.isnan(vals)]
-            if len(valid) == 0:
-                p_green = 0.0
-                v_frac = 0.0
-            else:
-                # High Perennial Vegetation proxy threshold: NDVI >= 0.40
-                p_green = round(float((valid >= 0.40).mean() * 100.0), 2)
-                v_frac = round(float(len(valid) / tot_cells), 3)
-
-            gdf_districts.loc[idx, f"green_pct_{yr}"] = p_green
-            gdf_districts.loc[idx, f"green_km2_{yr}"] = round((p_green / 100.0) * dist_area, 1)
-            if yr == 2025:
-                gdf_districts.loc[idx, "valid_pixel_fraction"] = v_frac
-
-        p_start = gdf_districts.loc[idx, f"green_pct_{years[0]}"]
-        p_end = gdf_districts.loc[idx, f"green_pct_{years[-1]}"]
-        delta_pp = round(p_end - p_start, 2)
-        gdf_districts.loc[idx, "net_change_pp"] = delta_pp
-        gdf_districts.loc[idx, "net_change_km2"] = round((delta_pp / 100.0) * dist_area, 1)
-        gdf_districts.loc[idx, "has_real_data"] = True
+        _fill_zone_stats(gdf_districts, idx, d_pixels, tot_cells, dist_area, national_rasters, years)
 
     # Compute state-level metrics
     for idx, row in gdf_states.iterrows():
@@ -278,28 +349,7 @@ def process_national_modis(years=[2000, 2010, 2020, 2025]):
         if tot_cells == 0:
             continue
 
-        for yr in years:
-            arr = national_rasters[yr]
-            vals = arr[s_pixels]
-            valid = vals[~np.isnan(vals)]
-            if len(valid) == 0:
-                p_green = 0.0
-                v_frac = 0.0
-            else:
-                p_green = round(float((valid >= 0.40).mean() * 100.0), 2)
-                v_frac = round(float(len(valid) / tot_cells), 3)
-
-            gdf_states.loc[idx, f"green_pct_{yr}"] = p_green
-            gdf_states.loc[idx, f"green_km2_{yr}"] = round((p_green / 100.0) * state_area, 1)
-            if yr == 2025:
-                gdf_states.loc[idx, "valid_pixel_fraction"] = v_frac
-
-        p_start = gdf_states.loc[idx, f"green_pct_{years[0]}"]
-        p_end = gdf_states.loc[idx, f"green_pct_{years[-1]}"]
-        delta_pp = round(p_end - p_start, 2)
-        gdf_states.loc[idx, "net_change_pp"] = delta_pp
-        gdf_states.loc[idx, "net_change_km2"] = round((delta_pp / 100.0) * state_area, 1)
-        gdf_states.loc[idx, "has_real_data"] = True
+        _fill_zone_stats(gdf_states, idx, s_pixels, tot_cells, state_area, national_rasters, years)
 
     # 4. Generate Real Static Tile Pyramid (Zooms 4, 5, 6)
     print("\n[Step 4] Rendering Real Static Tile Pyramid (Zooms 4 to 6)...")
@@ -360,45 +410,79 @@ def process_national_modis(years=[2000, 2010, 2020, 2025]):
     print("\n[Step 5] Writing Deliverables and Embedding Provenance Manifests...")
 
     tot_area = float(gdf_states["area_km2"].sum())
-    tot_green_2000 = float(gdf_states["green_km2_2000"].sum())
-    tot_green_2010 = float(gdf_states["green_km2_2010"].sum())
-    tot_green_2020 = float(gdf_states["green_km2_2020"].sum())
-    tot_green_2025 = float(gdf_states["green_km2_2025"].sum())
+
+    def _annual_totals(yr):
+        green_km2 = float(gdf_states[f"green_km2_{yr}"].sum())
+        observed_km2 = float(
+            (gdf_states["area_km2"] * gdf_states[f"observed_pct_{yr}"] / 100.0).sum()
+        )
+        median_ndvi = float(np.nanmedian(gdf_states[f"ndvi_median_{yr}"].astype(float)))
+        # Percentage is of observed land only, matching the per-zone definition
+        pct = round(green_km2 / observed_km2 * 100.0, 2) if observed_km2 else 0.0
+        return green_km2, observed_km2, median_ndvi, pct
+
+    annual = {yr: _annual_totals(yr) for yr in years}
+
+    metric_label = "Pre-monsoon vegetation greenness (MODIS 250 m)"
+    metric_definition = (
+        f"Share of observed land with NDVI >= {GREEN_THRESHOLD:.2f} in the April 15 to May 31 "
+        "window, from a per-tile median of MODIS MOD13Q1 16-day composites. This is a greenness "
+        "proxy, not a tree-canopy map: irrigated cropland, plantation and grass all register."
+    )
+    metric_caveat = (
+        "Cross-decade comparability is limited. Before 2003 the composite holds Terra alone; "
+        "from 2003 Aqua joins, roughly doubling the scene count and shifting the median slightly. "
+        "The threshold also sits near the middle of the Indian NDVI distribution, so a small shift "
+        "in the distribution moves the mapped share sharply. Read the median NDVI series alongside "
+        "the thresholded series before treating any decade-to-decade step as real greening."
+    )
 
     modis_manifest = create_provenance_manifest(
         source="microsoft_planetary_computer",
         collection="modis-13Q1-061",
-        item_count=396,
+        item_count=sum(scene_counts.values()),
         date_range="2000-2025 Pre-Monsoon (Apr 15 - May 31)",
         processing_pipeline="execution/build_national_modis.py",
         synthetic=False,
         verified=True,
-        code_version="v2.1",
+        code_version="v2.3",
         extra={
-            "metric_label": "High Perennial Vegetation (NDVI >= 0.40)",
+            "metric_label": metric_label,
+            "metric_definition": metric_definition,
+            "metric_caveat": metric_caveat,
+            "green_threshold": GREEN_THRESHOLD,
             "season_strategy": "pre_monsoon",
             "boundary_clipping": "Official Survey of India Sovereign Boundary Mask",
             "resolution_m": 250,
+            "analysis_grid_deg": RES_DEG,
+            "composite_method": "Pixel-wise median across all 16-day composites in the window, per sinusoidal tile; NDVI decimated by averaging, QA decimated by nearest",
+            "scene_sampling_note": "Terra only before 2003; Terra plus Aqua from 2003",
+            "scenes_per_year": {str(k): v for k, v in sorted(scene_counts.items())},
             "data_quality": "Filtered with 250m_16_days_pixel_reliability <= 1 (Good/Marginal Data)",
         }
     )
 
     national_summary = {
-        "title": "India National Perennial Green Cover (2000-2025)",
+        "title": "India pre-monsoon vegetation greenness (2000-2025)",
         "sensor": "MODIS (MOD13Q1 250m) via Microsoft Planetary Computer",
         "season_window": "Pre-Monsoon Summer (April 15 - May 31)",
-        "metric_label": "High perennial vegetation (proxy)",
+        "metric_label": metric_label,
+        "metric_definition": metric_definition,
+        "metric_caveat": metric_caveat,
         "has_real_data": True,
         "total_geographic_area_km2": round(tot_area, 1),
         "data": {
-            "2000": {"green_km2": round(tot_green_2000, 1), "green_percentage": round(tot_green_2000 / tot_area * 100.0, 2)},
-            "2010": {"green_km2": round(tot_green_2010, 1), "green_percentage": round(tot_green_2010 / tot_area * 100.0, 2)},
-            "2020": {"green_km2": round(tot_green_2020, 1), "green_percentage": round(tot_green_2020 / tot_area * 100.0, 2)},
-            "2025": {"green_km2": round(tot_green_2025, 1), "green_percentage": round(tot_green_2025 / tot_area * 100.0, 2)},
+            str(yr): {
+                "green_km2": round(annual[yr][0], 1),
+                "observed_km2": round(annual[yr][1], 1),
+                "green_percentage": annual[yr][3],
+                "median_ndvi": round(annual[yr][2], 4),
+            }
+            for yr in years
         },
         "net_change_2000_2025": {
-            "delta_pp": round((tot_green_2025 - tot_green_2000) / tot_area * 100.0, 2),
-            "delta_km2": round(tot_green_2025 - tot_green_2000, 1),
+            "delta_pp": round(annual[years[-1]][3] - annual[years[0]][3], 2),
+            "delta_km2": round(annual[years[-1]][0] - annual[years[0]][0], 1),
         },
         "_provenance": modis_manifest,
     }
