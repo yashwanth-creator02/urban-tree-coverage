@@ -137,6 +137,7 @@ let cityStats = null;
 let citiesRegistry = null;
 let lossHotspots = null;
 let forecastData = null;
+let ndbiCorrelation = null;
 
 // Initialize on DOM Load
 document.addEventListener("DOMContentLoaded", async () => {
@@ -249,6 +250,7 @@ async function loadDatasets() {
       fetch("./data/city_stats.json").then((r) => (r.ok ? r.json() : null)),
       fetch("./data/loss_hotspots.json").then((r) => (r.ok ? r.json() : null)),
       fetch("./data/forecast.json").then((r) => (r.ok ? r.json() : null)),
+      fetch("./data/ndbi_correlation.json").then((r) => (r.ok ? r.json() : null)),
     ]);
 
     nationalStats = natRes.status === "fulfilled" ? natRes.value : null;
@@ -259,6 +261,7 @@ async function loadDatasets() {
     cityStats = bengCityRes.status === "fulfilled" ? bengCityRes.value : null;
     lossHotspots = hotRes.status === "fulfilled" ? hotRes.value : null;
     forecastData = fcRes.status === "fulfilled" ? fcRes.value : null;
+    ndbiCorrelation = ndbiRes.status === "fulfilled" ? ndbiRes.value : null;
 
     if (statesData && statesData._provenance) state.statesProvenance = statesData._provenance;
     if (districtsData && districtsData._provenance) state.districtsProvenance = districtsData._provenance;
@@ -1086,6 +1089,14 @@ function renderAnalysisReport(properties, type) {
   if (trendEl) {
     const dir = shift >= 0 ? "Increasing" : "Decreasing";
     trendEl.innerText = `${dir} (${shift >= 0 ? "+" : ""}${shift} pp)`;
+  }
+
+  // NDBI built-up correlation (city-wide)
+  if (ndbiCorrelation && ndbiCorrelation.pearson_r !== null) {
+    const corrDiv = document.createElement("div");
+    corrDiv.className = "analysis-metric-row";
+    corrDiv.innerHTML = `<span class="analysis-label">Built-up vs Green (r)</span><span class="analysis-value">${ndbiCorrelation.pearson_r} (R²=${ndbiCorrelation.r_squared})</span>`;
+    body.insertBefore(corrDiv, recList);
   }
 
   // Generate recommendations

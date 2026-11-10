@@ -110,9 +110,14 @@ To test whether the national 2010 $\rightarrow$ 2020 greenness step was real or 
 1. **The 2010 Drought Base**: 2010 was an acute regional drought year across India, depressing vegetative vigor nationwide.
 2. **Terra/Aqua Sensor Evolution**: Pre-2003 MODIS composites relied exclusively on Terra MODIS (morning orbit), whereas post-2003 composites combined Terra and Aqua (afternoon orbit), doubling clear-sky observation density and shifting radiometric sensitivity slightly upward in humid/agricultural zones.
 
----
+### G. Built-up vs Green Cover Correlation (NDBI)
+As part of addressing the synopsis Objective 3 requirement, the pipeline now computes the Normalized Difference Built-up Index (NDBI) alongside NDVI for every 30m grid cell. NDBI uses the SWIR1 and NIR bands: (SWIR - NIR) / (SWIR + NIR). Positive values indicate built-up surfaces; negative values indicate vegetation.
 
-## 3. Sovereign Cartographic Alignment
+Per-cell NDBI change (2000→2025) is correlated with per-cell green cover change (in percentage points) using Pearson's correlation coefficient. This quantifies the relationship between built-up expansion and green cover loss at the 1km grid level.
+
+The correlation is computed in `execution/run_pipeline.py` and saved as `ndbi_correlation.json` with fields: `pearson_r`, `r_squared`, and `n` (number of valid cells).
+
+**Expected finding**: Strong negative correlation (r < -0.5) — cells with increasing built-up index show decreasing green cover, confirming that urban densification drives canopy loss.
 
 All administrative boundaries and raster clippings strictly follow the official Survey of India cartographic depiction:
 - **Source**: DataMeet Maps (Survey of India 2011 Census Administrative Boundaries)

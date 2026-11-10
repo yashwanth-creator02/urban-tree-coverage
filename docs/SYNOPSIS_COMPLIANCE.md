@@ -42,7 +42,7 @@
 | Zone/grid division | **SATISFIED** | `src/adapters/zones.py` — GridZoneAdapter (1km/500m UTM), WardsZoneAdapter (BBMP wards) |
 | Ranking by change | **SATISFIED** | `execution/build_hotspots.py` — ranks by net_change_pp with minimum area/start thresholds |
 | Hotspot identification | **SATISFIED** | `loss_hotspots.json`, `hotspots_by_tier.json` with click-to-fly navigation |
-| Built-up expansion correlation | **STRETCH (PARTIAL)** | NDBI analysis documented in METHODOLOGY.md but not implemented in pipeline |
+| Built-up expansion correlation | **IMPLEMENTED** | NDBI (SWIR1-NIR) computed per 30m cell alongside NDVI. Pearson r and R² between NDBI change and green cover change computed in pipeline and saved as ndbi_correlation.json. Displayed in analysis report panel. |
 | Fragmentation metrics | **STRETCH (PARTIAL)** | Patch count and mean patch size computed for Bengaluru; not for national tier |
 | LST analysis | **STRETCH (PARTIAL)** | LST vs NDVI correlation documented but not implemented |
 | Pearson r and R² | **PARTIAL** | CHIRPS rainfall vs NDVI: r = +0.724 (p < 0.001). ESA WorldCover vs MODIS: r = 0.80. Built-up/fragmentation/LST correlations not computed. |

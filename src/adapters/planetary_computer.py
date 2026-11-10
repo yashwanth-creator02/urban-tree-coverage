@@ -52,6 +52,7 @@ class PlanetaryComputerAdapter(DataSourceAdapter):
                 "red": loaded["red"],
                 "nir": loaded["nir"],
                 "blue": loaded["blue"] if "blue" in loaded else None,
+                "swir": loaded["swir"] if "swir" in loaded else None,
                 "transform": rasterio.Affine(*loaded["transform_affine"]),
                 "crs": str(loaded["crs"]),
                 "shape": tuple(loaded["shape"]),
@@ -95,6 +96,7 @@ class PlanetaryComputerAdapter(DataSourceAdapter):
         red_list = []
         nir_list = []
         blue_list = []
+        swir_list = []
         mask_list = []
         primary_transform = None
         primary_crs = None
@@ -113,6 +115,7 @@ class PlanetaryComputerAdapter(DataSourceAdapter):
             nir_asset = item.assets.get("nir08")
             qa_asset = item.assets.get("qa_pixel")
             blue_asset = item.assets.get("blue")
+            swir_asset = item.assets.get("swir16")
 
             if not (red_asset and nir_asset and qa_asset):
                 print(f"Skipping scene {item.id}: missing required assets.")
@@ -145,6 +148,11 @@ class PlanetaryComputerAdapter(DataSourceAdapter):
                 with rasterio.open(blue_asset.href) as src:
                     blue_raw = src.read(1, window=window)
 
+            swir_raw = None
+            if swir_asset:
+                with rasterio.open(swir_asset.href) as src:
+                    swir_raw = src.read(1, window=window)
+
             # Ensure spatial alignment
             if red_raw.shape != primary_shape or nir_raw.shape != primary_shape:
                 continue
@@ -162,6 +170,10 @@ class PlanetaryComputerAdapter(DataSourceAdapter):
                 blue_scaled = scale_surface_reflectance(blue_raw)
                 blue_list.append(blue_scaled)
 
+            if swir_raw is not None:
+                swir_scaled = scale_surface_reflectance(swir_raw)
+                swir_list.append(swir_scaled)
+
         if not red_list:
             raise RuntimeError(f"Failed to process any valid scenes for year {year}")
 
@@ -169,6 +181,7 @@ class PlanetaryComputerAdapter(DataSourceAdapter):
         comp_red = composite_bands(red_list, mask_list, method=composite_method)
         comp_nir = composite_bands(nir_list, mask_list, method=composite_method)
         comp_blue = composite_bands(blue_list, mask_list, method=composite_method) if blue_list else None
+        comp_swir = composite_bands(swir_list, mask_list, method=composite_method) if swir_list else None
 
         metadata = {
             "year": year,
@@ -194,6 +207,7 @@ class PlanetaryComputerAdapter(DataSourceAdapter):
             red=comp_red,
             nir=comp_nir,
             blue=comp_blue if comp_blue is not None else np.array([]),
+            swir=comp_swir if comp_swir is not None else np.array([]),
             transform_affine=affine_tuple,
             crs=str(primary_crs),
             shape=primary_shape,
@@ -205,6 +219,7 @@ class PlanetaryComputerAdapter(DataSourceAdapter):
             "red": comp_red,
             "nir": comp_nir,
             "blue": comp_blue,
+            "swir": comp_swir,
             "transform": primary_transform,
             "crs": str(primary_crs),
             "shape": primary_shape,

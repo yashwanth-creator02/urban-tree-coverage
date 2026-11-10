@@ -35,7 +35,7 @@ from src.core.area import (
 )
 from src.core.change import classify_change, summarize_change
 from src.core.forecast import forecast_linear_trend
-from src.core.indices import calculate_evi, calculate_msavi, calculate_ndvi, calculate_savi
+from src.core.indices import calculate_evi, calculate_msavi, calculate_ndbi, calculate_ndvi, calculate_savi
 from src.core.thresholding import apply_binary_threshold, classify_vegetation_tiers
 
 
@@ -145,6 +145,7 @@ def run_pipeline(config_path: str = "config/config.yaml") -> None:
     indices = {}
     green_masks = {}
     tier_grids = {}
+    ndbi_grids = {}
     citywide_stats = {"years": years, "data": {}}
     zone_stats = {zid: {} for zid in gdf_zones["zone_id"]}
 
@@ -183,6 +184,14 @@ def run_pipeline(config_path: str = "config/config.yaml") -> None:
             idx = calculate_msavi(nir, red)
         else:
             raise ValueError(f"Unsupported green index: {index_name}")
+
+        # Compute NDBI (built-up index) alongside for correlation analysis
+        swir = comp.get("swir")
+        if swir is not None and swir.size > 0:
+            ndbi = calculate_ndbi(swir, nir)
+        else:
+            ndbi = np.full_like(idx, np.nan)
+        ndbi_grids[yr] = ndbi
 
         indices[yr] = idx
 
@@ -278,6 +287,14 @@ def run_pipeline(config_path: str = "config/config.yaml") -> None:
                 gdf_target.loc[gdf_target["zone_id"] == zid, f"green_pct_{yr}"] = z_pct
                 gdf_target.loc[gdf_target["zone_id"] == zid, f"green_km2_{yr}"] = z_area
 
+                # NDBI (built-up index) per zone
+                ndbi_grid_yr = ndbi_grids.get(yr)
+                if ndbi_grid_yr is not None and ndbi_grid_yr.size > 0:
+                    z_ndbi = ndbi_grid_yr[zone_mask]
+                    z_ndbi_valid = z_ndbi[~np.isnan(z_ndbi)]
+                    z_ndbi_mean = float(np.mean(z_ndbi_valid)) if len(z_ndbi_valid) > 0 else None
+                    gdf_target.loc[gdf_target["zone_id"] == zid, f"ndbi_mean_{yr}"] = round(z_ndbi_mean, 4) if z_ndbi_mean is not None else None
+
             # Data-quality indicator: valid pixel count and coverage fraction
             expected_px = int((cell_area * 1e6) / (pixel_size_m * pixel_size_m))
             valid_frac = round(min(1.0, z_px / expected_px), 3) if expected_px > 0 else 1.0
@@ -307,6 +324,26 @@ def run_pipeline(config_path: str = "config/config.yaml") -> None:
 
     print("\nAggregating metrics across 1km grid...")
     gdf_zones = aggregate_layer(gdf_zones)
+
+    # Built-up vs Green Cover Correlation Analysis (NDBI)
+    if "ndbi_mean_2025" in gdf_zones.columns and "ndbi_mean_2000" in gdf_zones.columns:
+        ndbi_change = gdf_zones["ndbi_mean_2025"] - gdf_zones["ndbi_mean_2000"]
+        green_change = gdf_zones["net_change_pp"]
+        valid_mask = ~ndbi_change.isna() & ~green_change.isna()
+        if valid_mask.sum() >= 3:
+            x = ndbi_change[valid_mask].values
+            y = green_change[valid_mask].values
+            r = float(np.corrcoef(x, y)[0, 1])
+            r2 = r ** 2
+            print(f"Built-up vs Green Cover correlation: r={r:.4f}, R2={r2:.4f} (n={valid_mask.sum()})")
+            ndbi_corr = {"pearson_r": round(r, 4), "r_squared": round(r2, 4), "n": int(valid_mask.sum())}
+        else:
+            ndbi_corr = {"pearson_r": None, "r_squared": None, "n": 0}
+            print("Insufficient data for NDBI-green cover correlation.")
+        gdf_zones["ndbi_change_2000_2025"] = ndbi_change.round(4)
+    else:
+        ndbi_corr = {"pearson_r": None, "r_squared": None, "n": 0}
+        print("NDBI columns not available; skipping built-up correlation.")
 
     # Also aggregate real ward boundaries if present
     gdf_wards = None
@@ -413,6 +450,7 @@ def run_pipeline(config_path: str = "config/config.yaml") -> None:
         storage_adapter.save_json(hotspots, str(d / "loss_hotspots.json"))
         storage_adapter.save_json(validation_report, str(d / "validation_report.json"))
         storage_adapter.save_json(forecast_results, str(d / "forecast.json"))
+        storage_adapter.save_json(ndbi_corr, str(d / "ndbi_correlation.json"))
         storage_adapter.save_geojson(gdf_zones, str(d / "zones_grid_1km.geojson"))
         if gdf_wards is not None:
             storage_adapter.save_geojson(gdf_wards, str(d / "zones_wards.geojson"))
