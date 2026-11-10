@@ -593,6 +593,8 @@ function selectFeature(feature, type, updateChart = true) {
   if (updateChart) {
     renderSelectedTimelineChart(p);
   }
+
+  renderAnalysisReport(p, type);
 }
 
 // Zoom-Dependent Tier Resolution
@@ -1046,6 +1048,135 @@ function _cityHotspots() {
       centroid_lat: h.centroid_lat,
       centroid_lon: h.centroid_lon,
     }));
+}
+
+// Analysis Report Generator
+function renderAnalysisReport(properties, type) {
+  const section = document.getElementById("analysis-report-section");
+  const body = document.getElementById("analysis-report-body");
+  const recList = document.getElementById("recommendations-list");
+  if (!section || !body || !recList) return;
+
+  const isCity = type === "grid" || type === "city";
+  const hasReal = properties.has_real_data !== false && properties[`green_pct_${state.year}`] !== undefined;
+
+  // Show analysis report only for city grid cells with real data
+  if (!isCity || !hasReal) {
+    section.style.display = "none";
+    return;
+  }
+
+  section.style.display = "block";
+
+  const curPct = properties[`green_pct_${state.year}`] || 0;
+  const curArea = properties[`green_km2_${state.year}`] || 0;
+  const shift = properties.net_change_pp || properties.net_change_pct || 0;
+  const med2000 = properties.green_pct_2000 || 0;
+  const med2025 = properties.green_pct_2025 || 0;
+
+  const currentPctEl = document.getElementById("ar-current-pct");
+  const gapEl = document.getElementById("ar-gap");
+  const trendEl = document.getElementById("ar-trend");
+
+  if (currentPctEl) currentPctEl.innerText = `${curPct}%`;
+  if (gapEl) {
+    const gap = Math.max(0, 40.0 - curPct).toFixed(1);
+    gapEl.innerText = `${gap} pp`;
+  }
+  if (trendEl) {
+    const dir = shift >= 0 ? "Increasing" : "Decreasing";
+    trendEl.innerText = `${dir} (${shift >= 0 ? "+" : ""}${shift} pp)`;
+  }
+
+  // Generate recommendations
+  const recs = generateRecommendations(properties, curPct, shift, med2000, med2025);
+  recList.innerHTML = "";
+  recs.forEach((rec) => {
+    const item = document.createElement("div");
+    item.className = "recommendation-item";
+    item.innerHTML = `<div class="rec-title">${rec.title}</div><span class="rec-priority ${rec.priority}">${rec.priority}</span>${rec.text}`;
+    recList.appendChild(item);
+  });
+}
+
+function generateRecommendations(properties, curPct, shift, med2000, med2025) {
+  const recs = [];
+
+  if (curPct < 10) {
+    recs.push({
+      title: "Critical: Low canopy cover",
+      priority: "high",
+      text: "This cell has very low vegetation. Priority intervention: plant native shade trees along roads and in vacant lots. Target 15-20% cover within 3 years.",
+    });
+  } else if (curPct < 25) {
+    recs.push({
+      title: "Moderate: Room for growth",
+      priority: "medium",
+      text: "Canopy is present but below the 40% dense threshold. Infill planting in gaps and roadside verges can raise cover. Consider Miyawaki-style dense planting.",
+    });
+  } else if (curPct < 40) {
+    recs.push({
+      title: "Good: Approaching dense canopy",
+      priority: "low",
+      text: "Near the 40% dense threshold. Focus on protecting existing canopy and replacing invasive species with native trees.",
+    });
+  } else {
+    recs.push({
+      title: "Excellent: Dense canopy maintained",
+      priority: "low",
+      text: "This cell exceeds the 40% dense canopy threshold. Priority: protect existing green cover from conversion and monitor for fragmentation.",
+    });
+  }
+
+  if (shift < -10) {
+    recs.push({
+      title: "Severe loss detected",
+      priority: "high",
+      text: "Green cover dropped more than 10 percentage points since 2000. Investigate causes: construction, road widening, or land conversion. Enforce tree protection ordinances.",
+    });
+  } else if (shift < -2) {
+    recs.push({
+      title: "Moderate decline",
+      priority: "medium",
+      text: "Gradual canopy loss detected. Review development permits and ensure compensatory planting requirements are met.",
+    });
+  } else if (shift > 10) {
+    recs.push({
+      title: "Strong recovery",
+      priority: "low",
+      text: "Significant green cover gain. Document successful interventions (afforestation, park development) for replication in other cells.",
+    });
+  }
+
+  const ndvi2025 = properties.green_pct_2025 || 0;
+  const ndvi2000 = properties.green_pct_2000 || 0;
+  if (ndvi2025 > ndvi2000 + 5) {
+    recs.push({
+      title: "Positive trajectory",
+      priority: "low",
+      text: "Cover has increased since 2000. Continue current management practices and monitor for fragmentation.",
+    });
+  }
+
+  // Data quality note
+  const validFrac = properties.valid_pixel_fraction;
+  if (validFrac && validFrac < 0.8) {
+    recs.push({
+      title: "Data quality note",
+      priority: "medium",
+      text: "Observation quality is below 80%. Recommendations are based on limited clear-sky observations; verify with ground survey.",
+    });
+  }
+
+  if (recs.length === 0) {
+    recs.push({
+      title: "No specific recommendations",
+      priority: "low",
+      text: "Cell metrics are within normal ranges. Continue routine monitoring.",
+    });
+  }
+
+  return recs;
 }
 
 function renderHotspotsList() {

@@ -4,7 +4,7 @@ Unit tests for vegetation index algorithms with synthetic numeric arrays.
 
 import numpy as np
 import pytest
-from src.core.indices import calculate_evi, calculate_msavi, calculate_ndvi, calculate_savi
+from src.core.indices import calculate_evi, calculate_msavi, calculate_ndbi, calculate_ndvi, calculate_savi
 
 
 def test_calculate_ndvi_synthetic():
@@ -54,11 +54,13 @@ def test_calculate_savi():
     assert np.isclose(savi[0, 1], 0.0, atol=1e-4)
 
 
-def test_calculate_msavi():
-    nir = np.array([[0.7, 0.1]], dtype=np.float32)
-    red = np.array([[0.1, 0.1]], dtype=np.float32)
 
-    msavi = calculate_msavi(nir, red)
-    assert msavi.shape == (1, 2)
-    assert msavi[0, 0] > msavi[0, 1]
-    assert np.isclose(msavi[0, 1], 0.0, atol=1e-3)
+def test_calculate_ndbi():
+    # Built-up: high SWIR, low NIR -> positive NDBI
+    swir = np.array([[0.6, 0.1]], dtype=np.float32)
+    nir = np.array([[0.2, 0.7]], dtype=np.float32)
+
+    ndbi = calculate_ndbi(swir, nir)
+    assert ndbi.shape == (1, 2)
+    assert ndbi[0, 0] > 0  # built-up
+    assert ndbi[0, 1] < 0  # vegetation

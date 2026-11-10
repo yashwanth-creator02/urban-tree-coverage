@@ -77,3 +77,19 @@ def calculate_msavi(nir: np.ndarray, red: np.ndarray) -> np.ndarray:
     with np.errstate(invalid="ignore"):
         msavi = (term1 - np.sqrt(discriminant)) / 2.0
     return np.clip(msavi, -1.0, 1.0)
+
+
+def calculate_ndbi(swir: np.ndarray, nir: np.ndarray) -> np.ndarray:
+    """
+    Normalized Difference Built-up Index (NDBI).
+    Formula: (SWIR - NIR) / (SWIR + NIR)
+    Positive values indicate built-up surfaces; negative values indicate vegetation.
+    """
+    denominator = swir + nir
+    with np.errstate(divide="ignore", invalid="ignore"):
+        ndbi = np.where(
+            np.abs(denominator) > 1e-6,
+            (swir - nir) / denominator,
+            np.nan,
+        )
+    return np.clip(ndbi, -1.0, 1.0)

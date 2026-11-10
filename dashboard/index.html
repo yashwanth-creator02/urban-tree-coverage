@@ -214,13 +214,30 @@
         </span>
       </div>
 
-      <div class="hotspots-section">
+      <div class="analysis-report-section" id="analysis-report-section" style="display: none;">
         <div class="section-label-row">
-          <span class="section-label" id="hotspots-title">Largest losses</span>
-          <button type="button" class="info-badge" aria-label="About loss hotspots" data-tooltip="Ranked by absolute green area lost in square kilometres between 2000 and 2025, at the current map level: districts at national and district zoom, 1 km cells at city zoom. Percentage points are shown as a secondary figure.">i</button>
+          <span class="section-label">Analysis &amp; Recommendations</span>
+          <button type="button" class="info-badge" aria-label="About analysis report" data-tooltip="Actionable insights and recommendations to improve green cover for the selected zone.">i</button>
         </div>
-        <div class="hotspots-list" id="hotspots-list" role="list"></div>
-        <p class="hotspots-note" id="hotspots-note"></p>
+        <div class="analysis-report-body" id="analysis-report-body">
+          <div class="analysis-metric-row">
+            <span class="analysis-label">Current green cover</span>
+            <span class="analysis-value" id="ar-current-pct">—</span>
+          </div>
+          <div class="analysis-metric-row">
+            <span class="analysis-label">Target (dense canopy)</span>
+            <span class="analysis-value" id="ar-target-pct">≥40% NDVI</span>
+          </div>
+          <div class="analysis-metric-row">
+            <span class="analysis-label">Gap to target</span>
+            <span class="analysis-value" id="ar-gap">—</span>
+          </div>
+          <div class="analysis-metric-row">
+            <span class="analysis-label">Trend (2000→2025)</span>
+            <span class="analysis-value" id="ar-trend">—</span>
+          </div>
+          <div class="recommendations-list" id="recommendations-list"></div>
+        </div>
       </div>
     </div>
   </aside>
