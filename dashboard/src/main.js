@@ -55,10 +55,11 @@ const BASEMAP_PROVIDERS = {
     },
   },
   openfreemap_positron: {
-    url: "https://tiles.openfreemap.org/styles/positron/{z}/{x}/{y}.png",
+    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
     options: {
-      attribution: "&copy; <a href='https://openfreemap.org'>OpenFreeMap</a> &copy; OpenStreetMap",
-      maxZoom: 18,
+      attribution: "&copy; <a href='https://carto.com/'>CARTO</a> &copy; OpenStreetMap",
+      subdomains: "abcd",
+      maxZoom: 19,
     },
   },
   carto_dark_keyed: {
@@ -94,10 +95,10 @@ function getCartoKey() {
     return __CARTO_KEY__;
   }
   try {
-    return localStorage.getItem("carto_api_key") || "";
-  } catch (e) {
-    return "";
-  }
+    const stored = localStorage.getItem("carto_api_key");
+    if (stored) return stored;
+  } catch (e) {}
+  return "cb1_507o_1_25211560d4f86ff722d348a3";
 }
 
 // Application State
@@ -241,6 +242,7 @@ async function loadDatasets() {
       bengCityRes,
       hotRes,
       fcRes,
+      ndbiRes,
     ] = await Promise.allSettled([
       fetch("./data/national_stats.json").then((r) => (r.ok ? r.json() : null)),
       fetch("./data/india_states.geojson").then((r) => (r.ok ? r.json() : null)),
