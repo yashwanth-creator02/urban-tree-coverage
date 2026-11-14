@@ -58,3 +58,6 @@ dashboard/dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Vercel CLI local state
+.vercel/
